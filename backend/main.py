@@ -14,6 +14,7 @@ from typing import Optional
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -44,6 +45,10 @@ app.add_middleware(
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
 if os.path.exists(frontend_path):
     app.mount("/app", StaticFiles(directory=frontend_path, html=True), name="frontend")
+
+@app.get("/")
+def root():
+    return RedirectResponse(url="/app/screen1-build.html")
 
 
 class StepEditRequest(BaseModel):
