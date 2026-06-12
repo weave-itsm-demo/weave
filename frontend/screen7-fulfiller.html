@@ -1,586 +1,724 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jacquard Loom — Fulfiller</title>
-<style>
-@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
-@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
-@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
-@font-face { font-family: 'ServiceNow Sans Mono'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSansMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weave — Fulfiller</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --infinite-blue: #032D42;
-  --wasabi-green: #63DF4E;
-  --silver: #A8C8DC;
-  --bright-blue: #52B8FF;
-  --font-sans: 'ServiceNow Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'ServiceNow Sans Mono', 'Consolas', monospace;
-  --surface-1: #042538;
-  --surface-2: #063347;
-  --surface-3: #0a3d55;
-  --border-subtle: rgba(82,184,255,0.12);
-  --border-mid: rgba(82,184,255,0.22);
-  --border-green: rgba(99,223,78,0.3);
-  --green-bg: rgba(99,223,78,0.08);
-  --text-primary: #FFFFFF;
-  --text-secondary: #A8C8DC;
-  --text-muted: #5A8A9F;
-  --red: #FF5A5A;
-}
+    :root {
+      --bg:          #0d1b2a;
+      --sidebar-bg:  #0b1825;
+      --card:        #1a2d42;
+      --bubble-bot:  #162030;
+      --bubble-user: #1a2d42;
+      --input-bg:    #0f2030;
+      --border:      #1c3347;
+      --border-light:#243f57;
+      --accent:      #00ff88;
+      --accent-dim:  rgba(0,255,136,0.10);
+      --text:        #f0f4f8;
+      --text-sub:    #8fa8be;
+      --text-muted:  #4a6a82;
+      --form-input:  #1e3448;
+    }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { min-height: 100%; background: var(--infinite-blue); color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; }
+    html, body { height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
 
-/* ── NAV ── */
-nav {
-  position: sticky; top: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 32px; height: 52px;
-  background: rgba(3,45,66,0.92); backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-subtle);
-  overflow: visible;
-}
-.nav-logo {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 15px; font-weight: 600; color: var(--text-primary);
-  cursor: pointer; user-select: none; letter-spacing: -0.01em; text-decoration: none;
-}
+    /* ── Nav ── */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 52px; padding: 0 20px;
+      background: rgba(13,27,42,0.96); border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px); position: relative; z-index: 100; flex-shrink: 0;
+    }
+    .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-size: 15px; font-weight: 700; }
+    .nav-brand:hover { color: var(--accent); }
+    .nav-links { display: flex; gap: 4px; }
+    .nav-link { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--text-sub); text-decoration: none; transition: background 0.15s, color 0.15s; }
+    .nav-link:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    .nav-link.active { background: var(--accent-dim); color: var(--accent); }
 
-/* ── PERSONA SWITCHER ── */
-.persona-wrapper { display: flex; align-items: center; gap: 8px; }
-.persona-static-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; user-select: none; }
-.persona-dropdown {
-  position: relative; display: flex; align-items: center; gap: 7px;
-  background: var(--surface-2); border: 1px solid var(--border-subtle);
-  border-radius: 8px; padding: 6px 12px;
-  font-size: 12px; font-weight: 600; color: var(--text-primary);
-  cursor: pointer; user-select: none; transition: border-color 0.15s;
-}
-.persona-dropdown:hover { border-color: var(--border-mid); }
-.persona-dropdown.open  { border-color: var(--border-green); }
-.persona-chevron { color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
-.persona-dropdown.open .persona-chevron { transform: rotate(180deg); }
-.persona-menu {
-  display: none; position: absolute; top: calc(100% + 8px); right: 0;
-  background: var(--surface-2); border: 1px solid var(--border-mid);
-  border-radius: 10px; padding: 6px; min-width: 180px; z-index: 9999;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-}
-.persona-dropdown.open .persona-menu { display: block; }
-.persona-menu-item {
-  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
-  border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--text-secondary);
-  cursor: pointer; transition: background 0.12s; white-space: nowrap;
-}
-.persona-menu-item:hover { background: var(--surface-3); color: var(--text-primary); }
-.persona-menu-item.current { color: var(--wasabi-green); pointer-events: none; }
-.persona-menu-divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
-.persona-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.persona-dot.admin     { background: var(--bright-blue); }
-.persona-dot.fulfiller { background: var(--wasabi-green); }
+    /* ── Layout ── */
+    .layout { display: flex; height: calc(100vh - 52px); overflow: hidden; }
 
-/* ── PAGE ── */
-.page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+    /* ── Sidebar ── */
+    .sidebar { width: 220px; flex-shrink: 0; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+    .sidebar-header { padding: 16px 16px 10px; flex-shrink: 0; }
+    .sidebar-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+    .sidebar-list { flex: 1; overflow-y: auto; padding: 4px 8px 16px; }
+    .wf-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; transition: background 0.12s; border: 1px solid transparent; }
+    .wf-row:hover { background: rgba(255,255,255,0.05); }
+    .wf-row.active { background: var(--accent-dim); border-color: rgba(0,255,136,0.2); }
+    .wf-row-icon { font-size: 14px; flex-shrink: 0; width: 28px; height: 28px; background: rgba(255,255,255,0.05); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .wf-row-name { flex: 1; font-size: 12.5px; font-weight: 500; color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wf-row.active .wf-row-name { color: var(--accent); }
+    .wf-row:hover .wf-row-name { color: var(--text); }
+    .sidebar-empty { padding: 20px 16px; font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.6; }
 
-/* ── PAGE HEADER ── */
-.page-header { margin-bottom: 32px; }
-.page-eyebrow {
-  font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.1em; color: var(--wasabi-green); margin-bottom: 6px;
-}
-.page-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
-.page-sub { font-size: 13px; color: var(--text-muted); margin-top: 6px; max-width: 520px; }
+    /* ── Chat area ── */
+    .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .chat-header { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 52px; flex-shrink: 0; border-bottom: 1px solid var(--border); background: rgba(11,24,37,0.6); }
+    .chat-title { font-size: 13.5px; font-weight: 600; color: var(--text); }
+    .chat-subtitle { font-size: 11.5px; color: var(--text-muted); }
+    .online-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+    .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-/* ── SEARCH ── */
-.search-bar {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--surface-1); border: 1px solid var(--border-subtle);
-  border-radius: 10px; padding: 10px 16px; margin-bottom: 28px;
-  transition: border-color 0.15s;
-}
-.search-bar:focus-within { border-color: var(--border-green); }
-.search-bar input {
-  flex: 1; background: none; border: none; outline: none;
-  font-family: var(--font-sans); font-size: 14px; color: var(--text-primary);
-}
-.search-bar input::placeholder { color: var(--text-muted); }
+    .messages { flex: 1; overflow-y: auto; padding: 24px 20px; display: flex; flex-direction: column; gap: 14px; }
 
-/* ── BU FILTER ── */
-.bu-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 28px; }
-.bu-pill {
-  background: none; border: 1px solid var(--border-subtle);
-  color: var(--text-muted); font-family: var(--font-sans); font-size: 12px;
-  padding: 5px 14px; border-radius: 20px; cursor: pointer; transition: all 0.14s;
-}
-.bu-pill:hover { border-color: var(--border-mid); color: var(--text-secondary); }
-.bu-pill.active { background: var(--green-bg); border-color: var(--border-green); color: var(--wasabi-green); }
+    /* ── Message rows ── */
+    .msg-row { display: flex; align-items: flex-end; gap: 10px; animation: msgIn 0.2s ease forwards; }
+    .msg-row.msg-user { flex-direction: row-reverse; }
+    @keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 
-/* ── WORKFLOW GRID ── */
-.wf-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px;
-}
+    .msg-avatar { width: 30px; height: 30px; flex-shrink: 0; background: var(--accent-dim); border: 1px solid rgba(0,255,136,0.25); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--accent); font-weight: 700; margin-bottom: 2px; }
+    .msg-bubble { max-width: 74%; padding: 11px 15px; font-size: 13.5px; line-height: 1.65; word-wrap: break-word; }
+    .msg-bubble-bot { background: var(--bubble-bot); border: 1px solid var(--border); border-radius: 16px 16px 16px 4px; color: var(--text); }
+    .msg-bubble-user { background: var(--bubble-user); border: 1px solid var(--border-light); border-radius: 16px 16px 4px 16px; color: var(--text); }
 
-.wf-card {
-  background: var(--surface-1); border: 1px solid var(--border-subtle);
-  border-radius: 14px; overflow: hidden;
-  transition: border-color 0.15s, transform 0.12s;
-  animation: fadeUp 0.18s ease both;
-  display: flex; flex-direction: column;
-}
-.wf-card:hover { border-color: var(--border-mid); transform: translateY(-2px); }
+    /* Typing dots */
+    .typing-dots { display: flex; align-items: center; gap: 5px; padding: 4px 2px; }
+    .typing-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); animation: bounce 1.3s infinite; display: inline-block; }
+    .typing-dots span:nth-child(2){animation-delay:0.18s} .typing-dots span:nth-child(3){animation-delay:0.36s}
+    @keyframes bounce { 0%,80%,100%{transform:scale(0.75);opacity:0.5} 40%{transform:scale(1.1);opacity:1} }
 
-.card-top-bar { height: 3px; background: var(--wasabi-green); }
+    /* ── Dynamic inline form ── */
+    .inline-form { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .form-field { display: flex; flex-direction: column; gap: 5px; }
+    .form-field label { font-size: 11.5px; font-weight: 600; color: var(--text-sub); }
+    .form-field label .req { color: var(--accent); margin-left: 2px; }
+    .form-field input, .form-field select, .form-field textarea {
+      background: var(--form-input); border: 1px solid var(--border-light); border-radius: 7px;
+      color: var(--text); font-size: 13px; font-family: inherit; padding: 9px 12px;
+      outline: none; width: 100%; transition: border-color 0.15s;
+    }
+    .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+    .form-field input::placeholder, .form-field textarea::placeholder { color: var(--text-muted); }
+    .form-field input.invalid, .form-field textarea.invalid { border-color: #f87171 !important; }
+    .form-field textarea { resize: vertical; min-height: 60px; }
+    .form-submit-btn { width: 100%; padding: 10px; background: var(--accent); color: #081520; border: none; border-radius: 8px; font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 4px; transition: background 0.15s; }
+    .form-submit-btn:hover { background: #00e87c; }
+    .form-submit-btn:disabled { opacity: 0.55; cursor: default; }
 
-.card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    /* ── Input bar ── */
+    .input-bar { flex-shrink: 0; padding: 14px 20px; border-top: 1px solid var(--border); background: rgba(11,24,37,0.7); display: flex; align-items: center; gap: 10px; }
+    .chat-input { flex: 1; background: var(--input-bg); border: 1px solid var(--border-light); border-radius: 24px; color: var(--text); font-size: 13.5px; font-family: inherit; padding: 10px 18px; outline: none; transition: border-color 0.15s; }
+    .chat-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+    .chat-input::placeholder { color: var(--text-muted); }
+    .send-btn { width: 42px; height: 42px; flex-shrink: 0; background: var(--accent); color: #081520; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s, transform 0.1s; font-size: 16px; }
+    .send-btn:hover { background: #00e87c; transform: scale(1.05); }
+    .send-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
 
-.card-head { display: flex; align-items: flex-start; gap: 12px; }
-.card-icon {
-  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 18px;
-}
-.card-icon.itsm { background: rgba(255,90,90,0.1); }
-.card-icon.hr   { background: rgba(82,184,255,0.1); }
-.card-icon.csm  { background: rgba(99,223,78,0.1); }
-.card-icon.fin  { background: rgba(245,166,35,0.1); }
-.card-icon.it   { background: rgba(168,200,220,0.1); }
+    /* ── Execution panel ── */
+    .exec-panel { width: 300px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--sidebar-bg); display: flex; flex-direction: column; overflow: hidden; }
+    .exec-panel-header { padding: 14px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+    .exec-panel-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+    .exec-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+    .exec-badge.running { background: var(--accent-dim); color: var(--accent); animation: badgePulse 2s ease-in-out infinite; }
+    .exec-badge.complete { background: var(--accent-dim); color: var(--accent); }
+    .exec-badge.error { background: rgba(248,113,113,0.15); color: #f87171; }
+    @keyframes badgePulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    .exec-panel-body { flex: 1; overflow-y: auto; padding: 16px; min-height: 0; }
 
-.card-title-wrap { flex: 1; }
-.card-title { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; line-height: 1.3; }
-.card-bu { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-family: var(--font-mono); }
+    .exec-idle { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; gap: 14px; }
+    .exec-idle-icon { width: 52px; height: 52px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-light); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .exec-idle p { font-size: 12px; color: var(--text-muted); line-height: 1.6; max-width: 180px; }
 
-.card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; flex: 1; }
+    /* Step rows */
+    .exec-wf-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .exec-progress-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .exec-progress-label { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); }
+    .exec-bar { width: 100%; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+    .exec-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+    .exec-bar-fill.running { animation: barGlow 1.4s ease-in-out infinite alternate; }
+    @keyframes barGlow { from{box-shadow:0 0 4px rgba(0,255,136,0.3)} to{box-shadow:0 0 10px rgba(0,255,136,0.7);filter:brightness(1.2)} }
 
-.card-tags { display: flex; flex-wrap: wrap; gap: 5px; }
-.tag {
-  font-size: 10px; font-family: var(--font-mono); color: var(--text-muted);
-  background: var(--surface-3); border-radius: 4px; padding: 2px 7px;
-}
+    .exec-step { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; border-radius: 8px; margin-bottom: 2px; border: 1px solid transparent; transition: all 0.2s; }
+    .exec-step.pending { opacity: 0.3; }
+    .exec-step.active { background: rgba(0,255,136,0.06); border-color: rgba(0,255,136,0.15); border-left: 3px solid var(--accent); }
+    .exec-step.done { background: transparent; }
+    .exec-step.error-step { background: rgba(248,113,113,0.06); border-color: rgba(248,113,113,0.2); }
 
-.card-footer {
-  display: flex; align-items: center; justify-content: space-between;
-  border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: 4px;
-}
-.card-meta { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); display: flex; gap: 12px; }
-.btn-run {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--wasabi-green); color: #032D42;
-  font-family: var(--font-sans); font-size: 13px; font-weight: 700;
-  padding: 8px 20px; border: none; border-radius: 8px;
-  cursor: pointer; transition: opacity 0.15s, transform 0.1s; letter-spacing: -0.01em;
-}
-.btn-run:hover { opacity: 0.9; transform: translateY(-1px); }
-.btn-run:active { transform: translateY(0); }
+    .exec-step-icon { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+    .exec-step-icon.pending { background: var(--border); color: var(--text-muted); }
+    .exec-step-icon.active  { background: var(--accent-dim); border: 1.5px solid var(--accent); color: var(--accent); }
+    .exec-step-icon.done    { background: var(--accent); color: var(--bg); }
+    .exec-step-icon.error   { background: rgba(248,113,113,0.2); color: #f87171; }
 
-/* ── EMPTY STATE ── */
-.empty-state {
-  display: none; flex-direction: column; align-items: center;
-  padding: 80px 24px; text-align: center; grid-column: 1/-1;
-}
-.empty-state.show { display: flex; }
-.empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.4; }
-.empty-title { font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
-.empty-sub { font-size: 13px; color: var(--text-muted); }
+    .exec-step-body { flex: 1; min-width: 0; }
+    .exec-step-title { font-size: 12px; font-weight: 600; color: var(--text); }
+    .exec-step-log { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .exec-step-time { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--text-muted); flex-shrink: 0; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .spin { display: inline-block; width: 10px; height: 10px; border: 1.5px solid rgba(0,255,136,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
 
-/* ── RUN MODAL ── */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(3,45,66,0.7); backdrop-filter: blur(6px);
-  z-index: 300; display: none; align-items: center; justify-content: center;
-}
-.modal-overlay.show { display: flex; }
-.modal {
-  background: var(--surface-1); border: 1px solid var(--border-mid);
-  border-radius: 14px; width: 480px; max-width: calc(100vw - 40px);
-  overflow: hidden; animation: fadeUp 0.2s ease;
-}
-.modal-header {
-  padding: 20px 24px 16px; border-bottom: 1px solid var(--border-subtle);
-  display: flex; align-items: flex-start; justify-content: space-between;
-}
-.modal-icon { font-size: 24px; margin-bottom: 6px; }
-.modal-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
-.modal-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-.modal-close {
-  background: none; border: none; color: var(--text-muted); cursor: pointer;
-  font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 5px;
-  transition: color 0.12s; flex-shrink: 0;
-}
-.modal-close:hover { color: var(--text-primary); }
-.modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
-.modal-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    /* Result card */
+    .result-card { margin-top: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; animation: msgIn 0.25s ease forwards; }
+    .result-card-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+    .result-section { margin-bottom: 10px; }
+    .result-section-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 5px; }
+    .result-text { font-size: 12px; color: var(--text-sub); line-height: 1.6; }
+    .result-item { display: flex; align-items: flex-start; gap: 7px; font-size: 12px; color: var(--text-sub); padding: 3px 0; }
+    .result-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 5px; }
+    .result-divider { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
 
-.input-group { display: flex; flex-direction: column; gap: 6px; }
-.input-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
-.input-field {
-  background: var(--surface-2); border: 1px solid var(--border-subtle);
-  border-radius: 8px; padding: 9px 12px; font-family: var(--font-sans);
-  font-size: 13px; color: var(--text-primary); outline: none; transition: border-color 0.15s;
-}
-.input-field:focus { border-color: var(--border-green); }
-.input-field::placeholder { color: var(--text-muted); }
-
-.modal-footer {
-  padding: 16px 24px; border-top: 1px solid var(--border-subtle);
-  display: flex; justify-content: flex-end; gap: 10px;
-}
-.btn-cancel {
-  background: none; border: 1px solid var(--border-subtle); color: var(--text-muted);
-  font-family: var(--font-sans); font-size: 13px; padding: 9px 18px;
-  border-radius: 8px; cursor: pointer; transition: border-color 0.15s, color 0.15s;
-}
-.btn-cancel:hover { border-color: var(--border-mid); color: var(--text-secondary); }
-.btn-confirm {
-  background: var(--wasabi-green); color: #032D42;
-  font-family: var(--font-sans); font-size: 13px; font-weight: 700;
-  padding: 9px 24px; border: none; border-radius: 8px; cursor: pointer;
-  transition: opacity 0.15s;
-}
-.btn-confirm:hover { opacity: 0.9; }
-
-@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-</style>
+    /* Panel divider */
+    .panel-divider { width: 4px; flex-shrink: 0; background: var(--border); cursor: col-resize; transition: background 0.15s; }
+    .panel-divider:hover, .panel-divider.dragging { background: var(--accent); }
+  </style>
 </head>
 <body>
 
-<nav>
-  <a class="nav-logo" href="screen1-build.html">
-    <svg width="40" height="24" viewBox="0 0 140 100">
-      <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#63DF4E" stroke-width="8" stroke-linecap="round"/>
-      <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#A8C8DC" stroke-width="8" stroke-linecap="round"/>
+<nav class="nav">
+  <a href="/app/screen1-build.html" class="nav-brand">
+    <svg width="26" height="15" viewBox="0 0 52 30" fill="none">
+      <path d="M26 15C26 15 19 4 12 4C7.03 4 3 8.03 3 13C3 17.97 7.03 22 12 22C19 22 26 15 26 15Z
+               M26 15C26 15 33 26 40 26C44.97 26 49 21.97 49 17C49 12.03 44.97 8 40 8C33 8 26 15 26 15Z"
+            stroke="#00ff88" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    Jacquard Loom
+    Weave
   </a>
-
-  <div class="persona-wrapper">
-    <span class="persona-static-label">Persona:</span>
-    <div class="persona-dropdown" id="persona-dropdown" onclick="togglePersonaMenu(event)">
-      <span>Fulfiller</span>
-      <svg class="persona-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4 6,8 10,4"/></svg>
-      <div class="persona-menu" onclick="event.stopPropagation()">
-        <div class="persona-menu-item current"><span class="persona-dot fulfiller"></span>Fulfiller</div>
-        <div class="persona-menu-divider"></div>
-        <div class="persona-menu-item" onclick="window.location.href='screen1-build.html'"><span class="persona-dot admin"></span>AI Admin</div>
-      </div>
-    </div>
+  <div class="nav-links">
+    <a href="/app/screen1-build.html" class="nav-link">Build</a>
+    <a href="/app/screen4-library.html" class="nav-link">Library</a>
+    <a href="/app/screen7-fulfiller.html" class="nav-link active">Fulfiller</a>
   </div>
 </nav>
 
-<div class="page">
+<div class="layout">
 
-  <div class="page-header">
-    <div class="page-eyebrow">Fulfiller Portal</div>
-    <div class="page-title">Published workflows</div>
-    <div class="page-sub">Browse and run automated workflows published by your team. Select a workflow to review its steps and kick it off.</div>
-  </div>
-
-  <!-- Search -->
-  <div class="search-bar">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" stroke-width="1.8" stroke-linecap="round">
-      <circle cx="7" cy="7" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/>
-    </svg>
-    <input type="text" id="search" placeholder="Search workflows by name, description, or tag…" oninput="applyFilters()">
-  </div>
-
-  <!-- BU filter -->
-  <div class="bu-filter" id="bu-filter"></div>
-
-  <!-- Grid -->
-  <div class="wf-grid" id="wf-grid">
-    <div class="empty-state" id="empty-state">
-      <div class="empty-icon">🧵</div>
-      <div class="empty-title">No workflows found</div>
-      <div class="empty-sub">Try a different search or filter.</div>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <p class="sidebar-label">Published Workflows</p>
     </div>
-  </div>
+    <div class="sidebar-list" id="sidebar-list">
+      <p class="sidebar-empty">Loading…</p>
+    </div>
+  </aside>
 
-</div>
-
-<!-- Run confirmation modal -->
-<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-header">
+  <!-- Chat -->
+  <div class="chat-area">
+    <div class="chat-header">
       <div>
-        <div class="modal-icon" id="modal-icon">🚨</div>
-        <div class="modal-title" id="modal-title">Run workflow</div>
-        <div class="modal-sub" id="modal-sub">—</div>
+        <div class="chat-title" id="chat-title">Workflow Assistant</div>
+        <div class="chat-subtitle" id="chat-subtitle">Select a workflow to get started</div>
       </div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="modal-desc" id="modal-desc">—</div>
-      <div class="input-group" id="modal-input-group">
-        <div class="input-label">Incident / Request number <span style="color:var(--text-muted);text-transform:none;font-weight:400">(optional)</span></div>
-        <input class="input-field" id="modal-input" type="text" placeholder="e.g. INC0042819 or REQ0001234" />
+      <div class="online-badge">
+        <span class="online-dot"></span>
+        Online
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-confirm" onclick="confirmRun()">
-        Run now
-        <svg width="12" height="8" viewBox="0 0 140 100" style="margin-left:4px">
-          <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#032D42" stroke-width="12" stroke-linecap="round"/>
-          <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#032D42" stroke-width="12" stroke-linecap="round"/>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-bar">
+      <input type="text" class="chat-input" id="chat-input" placeholder="Type a message or select a workflow…" autocomplete="off">
+      <button class="send-btn" id="send-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
         </svg>
       </button>
     </div>
   </div>
+
+  <div class="panel-divider" id="panel-divider"></div>
+
+  <!-- Execution panel -->
+  <aside class="exec-panel" id="exec-panel">
+    <div class="exec-panel-header">
+      <span class="exec-panel-title">Execution</span>
+      <span class="exec-badge" id="exec-badge" style="display:none"></span>
+    </div>
+    <div class="exec-panel-body" id="exec-panel-body">
+      <div class="exec-idle" id="exec-idle">
+        <div class="exec-idle-icon">⚡</div>
+        <p>Select a workflow from the sidebar and provide inputs to run it.</p>
+      </div>
+      <div id="exec-running" style="display:none"></div>
+    </div>
+  </aside>
+
 </div>
 
 <script>
-var workflows = [];
-var filteredWorkflows = [];
-var activeBU = 'all';
-var activeWorkflow = null;
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let activeWorkflow = null;
+let isBotTyping    = false;
+let execWs         = null;
+let execTotal      = 0;
+let execDone       = 0;
+let formCounter    = 0;
 
-function seedWorkflows() {
-  return [
-    {
-      id: 'WF-A1B2C', title: 'Incident Triage & Briefing', icon: '🚨', iconClass: 'itsm',
-      bu: 'ITSM', runs: 12, steps: 5,
-      desc: 'Automatically triages P1/P2 incidents — checks the affected CI, scores recent history, generates an on-call briefing, and notifies stakeholders via Slack and email.',
-      tags: ['P1/P2', 'on-call', 'Slack', 'CMDB'],
-      inputLabel: 'Incident / Issue ID', inputPlaceholder: 'e.g. INC0042819 or #42',
-      stepDefs: [
-        { id:'step_1', title:'Fetch incident details from GitHub',          type:'query',  tool:'github.fetch_incidents'              },
-        { id:'step_2', title:'Search Stack Overflow for known resolutions', type:'query',  tool:'stackoverflow.search_fixes'          },
-        { id:'step_3', title:'Generate incident resolution plan',           type:'action', tool:'weave.generate_resolution_plan'      }
-      ]
-    },
-    {
-      id: 'WF-D3E4F', title: 'Employee Onboarding', icon: '🧑‍💼', iconClass: 'hr',
-      bu: 'HR Service Delivery', runs: 3, steps: 5,
-      desc: 'Provisions accounts, assigns training modules, schedules introductory meetings, and sends a welcome email when a new hire is added to the HR system.',
-      tags: ['HR', 'provisioning', 'training', 'onboarding'],
-      inputLabel: 'Employee ID', inputPlaceholder: 'e.g. EMP00421',
-      stepDefs: [
-        { id:'s1', title:'Validate new hire record in HR system',          type:'query'  },
-        { id:'s2', title:'Provision AD account and email',                 type:'action' },
-        { id:'s3', title:'Assign mandatory training modules',              type:'write'  },
-        { id:'s4', title:'Schedule introductory meetings',                 type:'logic'  },
-        { id:'s5', title:'Send welcome email with first-day instructions', type:'notify' }
-      ]
-    },
-    {
-      id: 'WF-J7K8L', title: 'Purchase Order Approval', icon: '💰', iconClass: 'fin',
-      bu: 'Finance & Procurement', runs: 28, steps: 4,
-      desc: 'Routes purchase orders through the correct approval chain based on amount, department, and vendor status. Notifies approvers and updates the PO record on decision.',
-      tags: ['PO', 'approval', 'procurement', 'Finance'],
-      inputLabel: 'PO number', inputPlaceholder: 'e.g. PO-2026-00892',
-      stepDefs: [
-        { id:'s1', title:'Fetch PO record and vendor details', type:'fetch'  },
-        { id:'s2', title:'Evaluate approval routing rules',    type:'logic'  },
-        { id:'s3', title:'Notify approvers via email',         type:'notify' },
-        { id:'s4', title:'Update PO state on approval',        type:'write'  }
-      ]
-    },
-    {
-      id: 'WF-P1Q2R', title: 'Change Request Risk Assessment', icon: '🔄', iconClass: 'itsm',
-      bu: 'ITSM', runs: 41, steps: 4,
-      desc: 'Assesses change request risk by evaluating CI impact, historical failure rates, and current incident load. Notifies the CAB and updates the change record.',
-      tags: ['change management', 'risk', 'CAB', 'ITSM'],
-      inputLabel: 'Change request number', inputPlaceholder: 'e.g. CHG0009341',
-      stepDefs: [
-        { id:'s1', title:'Fetch change request and affected CIs', type:'fetch'   },
-        { id:'s2', title:'Evaluate historical failure rate',      type:'process' },
-        { id:'s3', title:'Score overall change risk',             type:'logic'   },
-        { id:'s4', title:'Notify CAB and update change record',   type:'notify'  }
-      ]
-    },
-    {
-      id: 'WF-G5H6I', title: 'Customer Escalation Response', icon: '🎧', iconClass: 'csm',
-      bu: 'Customer Service', runs: 7, steps: 5,
-      desc: 'Identifies account health, pulls case history, routes to the right support tier, notifies the AE, and drafts an initial response for agent review.',
-      tags: ['CSM', 'escalation', 'SLA', 'AE'],
-      inputLabel: 'Case number', inputPlaceholder: 'e.g. CS-204891',
-      stepDefs: [
-        { id:'s1', title:'Fetch customer account and health score', type:'fetch'   },
-        { id:'s2', title:'Pull recent case history',                type:'query'   },
-        { id:'s3', title:'Evaluate routing and SLA criteria',       type:'logic'   },
-        { id:'s4', title:'Notify account executive',                type:'notify'  },
-        { id:'s5', title:'Draft initial response for agent review', type:'generate'}
-      ]
-    }
-  ];
-}
+// ══════════════════════════════════════════════
+// INPUT INFERENCE
+// Determines what fields to ask for based on
+// workflow name and step titles.
+// ══════════════════════════════════════════════
+function inferInputs(workflow) {
+  // Use explicit inputs field if defined
+  if (workflow.inputs && workflow.inputs.length) return workflow.inputs;
 
-function init() {
-  workflows = seedWorkflows();
+  const name  = (workflow.workflow_name || workflow.name || '').toLowerCase();
+  const steps = (workflow.steps || []).map(s => (s.title || '').toLowerCase()).join(' ');
+  const all   = name + ' ' + steps;
 
-  // Inject recently published workflow from localStorage
-  try {
-    var wfId = localStorage.getItem('weave_workflow_id');
-    var wfSteps = JSON.parse(localStorage.getItem('weave_steps') || '[]');
-    var published = localStorage.getItem('weave_published_' + wfId);
-    if (published && wfId && !workflows.find(function(w){ return w.id === wfId; })) {
-      workflows.unshift({
-        id: wfId, title: 'New workflow', icon: '🧵', iconClass: 'it',
-        bu: 'Custom', runs: 0, steps: wfSteps.length || 5,
-        desc: 'Recently published workflow.',
-        tags: ['custom'],
-        inputLabel: 'Reference number',
-        inputPlaceholder: 'e.g. REF-001'
-      });
-    }
-  } catch(e) {}
-
-  buildBUFilter();
-  applyFilters();
-  fetchPublishedWorkflows();
-}
-
-async function fetchPublishedWorkflows() {
-  try {
-    var res = await fetch('http://localhost:3000/api/workflows/published');
-    if (!res.ok) return;
-    var data = await res.json();
-    var published = data.workflows || [];
-    var added = false;
-    published.forEach(function(w) {
-      var id = w.workflow_id || w.id;
-      if (workflows.find(function(x){ return x.id === id; })) return;
-      workflows.unshift({
-        id:    id,
-        title: w.workflow_name || w.title || 'Untitled Workflow',
-        icon:  '🧵', iconClass: 'it', bu: 'Custom',
-        runs: 0, steps: (w.steps || []).length,
-        desc: w.prompt || 'Published workflow.',
-        tags: ['custom'],
-        inputLabel: 'Issue / Record ID',
-        inputPlaceholder: 'e.g. 1',
-        stepDefs: (w.steps || []).map(function(s) {
-          return { id: s.id, title: s.title, type: s.type, tool: s.tool };
-        })
-      });
-      added = true;
-    });
-    if (added) { buildBUFilter(); applyFilters(); }
-  } catch(e) {}
-}
-
-function buildBUFilter() {
-  var bus = ['all'].concat([...new Set(workflows.map(function(w){ return w.bu; }))]);
-  var filter = document.getElementById('bu-filter');
-  filter.innerHTML = bus.map(function(bu) {
-    return '<button class="bu-pill' + (bu === 'all' ? ' active' : '') + '" onclick="setBU(\'' + esc(bu) + '\', this)">' +
-      (bu === 'all' ? 'All' : esc(bu)) + '</button>';
-  }).join('');
-}
-
-function setBU(bu, btn) {
-  activeBU = bu;
-  document.querySelectorAll('.bu-pill').forEach(function(p){ p.classList.remove('active'); });
-  btn.classList.add('active');
-  applyFilters();
-}
-
-function applyFilters() {
-  var q = document.getElementById('search').value.toLowerCase();
-  filteredWorkflows = workflows.filter(function(w) {
-    var matchBU = activeBU === 'all' || w.bu === activeBU;
-    var matchQ  = !q || w.title.toLowerCase().includes(q) ||
-                  w.desc.toLowerCase().includes(q) ||
-                  (w.tags || []).some(function(t){ return t.toLowerCase().includes(q); });
-    return matchBU && matchQ;
-  });
-  renderGrid();
-}
-
-function renderGrid() {
-  var grid = document.getElementById('wf-grid');
-  var empty = document.getElementById('empty-state');
-
-  if (!filteredWorkflows.length) {
-    Array.from(grid.querySelectorAll('.wf-card')).forEach(function(c){ c.remove(); });
-    if (empty) empty.classList.add('show');
-    return;
+  if (all.includes('github') || all.includes('issue') || all.includes('incident') || all.includes('triage')) {
+    return [{ key: 'issue_number', label: 'GitHub Issue Number', type: 'text', placeholder: 'e.g. 42', required: true }];
   }
-  if (empty) empty.classList.remove('show');
+  if (all.includes('vendor') || all.includes('onboard') || all.includes('supplier')) {
+    return [
+      { key: 'company',  label: 'Company Name',         type: 'text',  placeholder: 'e.g. Acme Corp',    required: true },
+      { key: 'country',  label: 'Country',              type: 'text',  placeholder: 'e.g. United States', required: true },
+      { key: 'industry', label: 'Industry',             type: 'text',  placeholder: 'e.g. Technology',    required: false },
+      { key: 'email',    label: 'Vendor Contact Email', type: 'email', placeholder: 'vendor@company.com', required: false },
+    ];
+  }
+  if (all.includes('change') || all.includes('deploy') || all.includes('release')) {
+    return [{ key: 'change_id', label: 'Change Request ID', type: 'text', placeholder: 'e.g. CHG0012345', required: true }];
+  }
+  if (all.includes('user') || all.includes('access') || all.includes('provision')) {
+    return [
+      { key: 'username', label: 'Username / Email',   type: 'text', placeholder: 'e.g. john.doe@company.com', required: true },
+      { key: 'role',     label: 'Role / Access Level',type: 'text', placeholder: 'e.g. Developer',            required: false },
+    ];
+  }
+  if (all.includes('security') || all.includes('alert') || all.includes('threat')) {
+    return [{ key: 'alert_id', label: 'Alert / Ticket ID', type: 'text', placeholder: 'e.g. SEC-1234', required: true }];
+  }
+  // Generic fallback
+  return [{ key: 'details', label: 'Describe the request', type: 'textarea', placeholder: 'Provide details to run this workflow…', required: true }];
+}
 
-  grid.innerHTML = filteredWorkflows.map(function(w) {
-    return '<div class="wf-card">' +
-      '<div class="card-top-bar"></div>' +
-      '<div class="card-body">' +
-        '<div class="card-head">' +
-          '<div class="card-icon ' + esc(w.iconClass) + '">' + w.icon + '</div>' +
-          '<div class="card-title-wrap">' +
-            '<div class="card-title">' + esc(w.title) + '</div>' +
-            '<div class="card-bu">' + esc(w.bu) + ' · ' + esc(w.id) + '</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="card-desc">' + esc(w.desc) + '</div>' +
-        '<div class="card-tags">' + (w.tags||[]).map(function(t){ return '<span class="tag">' + esc(t) + '</span>'; }).join('') + '</div>' +
-        '<div class="card-footer">' +
-          '<div class="card-meta">' +
-            '<span>' + w.steps + ' steps</span>' +
-            '<span>' + w.runs + ' runs</span>' +
-          '</div>' +
-          '<button class="btn-run" onclick="openRunModal(\'' + esc(w.id) + '\')">' +
-            '▶ Run' +
-          '</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
+// ══════════════════════════════════════════════
+// SIDEBAR
+// ══════════════════════════════════════════════
+async function loadSidebar() {
+  try {
+    const res  = await fetch('/api/workflows/published');
+    const data = await res.json();
+    const wfs  = data.workflows || [];
+    const el   = document.getElementById('sidebar-list');
+
+    if (!wfs.length) {
+      el.innerHTML = '<p class="sidebar-empty">No published workflows yet.<br>Publish one from the Library screen.</p>';
+      return;
+    }
+
+    // Deduplicate by name — keep latest
+    const seen = new Map();
+    wfs.forEach(w => {
+      const key = (w.workflow_name || w.name || '').trim();
+      if (!seen.has(key) || (w.updated_at || '') > (seen.get(key).updated_at || ''))
+        seen.set(key, w);
+    });
+
+    el.innerHTML = '';
+    seen.forEach(w => {
+      const name = w.workflow_name || w.name || 'Unnamed';
+      const row  = document.createElement('div');
+      row.className = 'wf-row';
+      row.innerHTML = `
+        <div class="wf-row-icon">${guessIcon(name)}</div>
+        <div class="wf-row-name" title="${esc(name)}">${esc(name)}</div>
+      `;
+      row.addEventListener('click', () => selectWorkflow(w, row));
+      el.appendChild(row);
+    });
+  } catch (e) {
+    document.getElementById('sidebar-list').innerHTML = '<p class="sidebar-empty">Failed to load workflows.</p>';
+  }
+}
+
+function guessIcon(name) {
+  const n = name.toLowerCase();
+  if (n.includes('incident') || n.includes('triage'))  return '🚨';
+  if (n.includes('vendor')   || n.includes('onboard')) return '🏢';
+  if (n.includes('change')   || n.includes('deploy'))  return '🔄';
+  if (n.includes('user')     || n.includes('access'))  return '👤';
+  if (n.includes('security') || n.includes('alert'))   return '🔒';
+  if (n.includes('monitor'))                           return '📡';
+  return '⚡';
+}
+
+// ══════════════════════════════════════════════
+// WORKFLOW SELECTION
+// ══════════════════════════════════════════════
+function selectWorkflow(workflow, rowEl) {
+  document.querySelectorAll('.wf-row').forEach(r => r.classList.remove('active'));
+  rowEl.classList.add('active');
+  activeWorkflow = workflow;
+
+  const name   = workflow.workflow_name || workflow.name || 'Workflow';
+  const inputs = inferInputs(workflow);
+  const steps  = (workflow.steps || []).length;
+
+  document.getElementById('chat-title').textContent    = name;
+  document.getElementById('chat-subtitle').textContent = `${steps} step${steps !== 1 ? 's' : ''} · Published`;
+
+  const fieldList = inputs.map(f => `<strong>${esc(f.label)}</strong>`).join(', ');
+  addBotMessage(
+    `I'll run <strong>${esc(name)}</strong> for you.\n\nPlease provide: ${fieldList}`,
+    buildForm(inputs),
+    true
+  );
+}
+
+// ══════════════════════════════════════════════
+// DYNAMIC FORM BUILDER
+// ══════════════════════════════════════════════
+function buildForm(inputs) {
+  const fid    = `form-${++formCounter}`;
+  const fields = inputs.map(f => {
+    const req = f.required ? '<span class="req">*</span>' : '';
+    if (f.type === 'textarea') {
+      return `<div class="form-field">
+        <label>${esc(f.label)}${req}</label>
+        <textarea id="${fid}-${f.key}" placeholder="${esc(f.placeholder || '')}"></textarea>
+      </div>`;
+    }
+    return `<div class="form-field">
+      <label>${esc(f.label)}${req}</label>
+      <input type="${esc(f.type || 'text')}" id="${fid}-${f.key}" placeholder="${esc(f.placeholder || '')}">
+    </div>`;
   }).join('');
+
+  const name = activeWorkflow ? (activeWorkflow.workflow_name || activeWorkflow.name || 'Workflow') : 'Workflow';
+  return `<div class="inline-form" id="${fid}">
+    ${fields}
+    <button class="form-submit-btn" id="${fid}-btn" onclick="submitForm('${fid}')">
+      ▶ Run ${esc(name)}
+    </button>
+  </div>`;
 }
 
-// ── RUN MODAL ──
-function openRunModal(id) {
-  var w = workflows.find(function(x){ return x.id === id; });
-  if (!w) return;
-  activeWorkflow = w;
-
-  document.getElementById('modal-icon').textContent  = w.icon;
-  document.getElementById('modal-title').textContent = w.title;
-  document.getElementById('modal-sub').textContent   = w.bu + ' · ' + w.steps + ' steps';
-  document.getElementById('modal-desc').textContent  = w.desc;
-
-  var inputGroup = document.getElementById('modal-input-group');
-  var inputLabel = inputGroup.querySelector('.input-label');
-  var inputField = document.getElementById('modal-input');
-  inputLabel.textContent = w.inputLabel || 'Reference number';
-  inputField.placeholder = w.inputPlaceholder || '';
-  inputField.value = '';
-
-  document.getElementById('modal-overlay').classList.add('show');
-  setTimeout(function(){ inputField.focus(); }, 100);
-}
-
-function closeModal() {
-  document.getElementById('modal-overlay').classList.remove('show');
-  activeWorkflow = null;
-}
-
-function handleOverlayClick(e) {
-  if (e.target === document.getElementById('modal-overlay')) closeModal();
-}
-
-function confirmRun() {
+function submitForm(fid) {
   if (!activeWorkflow) return;
-  var issueId = document.getElementById('modal-input').value.trim();
-  localStorage.setItem('weave_workflow_id', activeWorkflow.id);
-  localStorage.setItem('weave_steps', JSON.stringify(activeWorkflow.stepDefs || []));
-  if (issueId) localStorage.setItem('weave_run_context', issueId);
-  closeModal();
-  window.location.href = 'screen3-fulfiller-run.html';
+  const inputs = inferInputs(activeWorkflow);
+  const values = {};
+  let hasErr   = false;
+
+  inputs.forEach(f => {
+    const el  = document.getElementById(`${fid}-${f.key}`);
+    if (!el) return;
+    const val = el.value.trim();
+    if (f.required && !val) {
+      el.classList.add('invalid');
+      setTimeout(() => el.classList.remove('invalid'), 2000);
+      hasErr = true;
+    } else {
+      values[f.key] = val;
+    }
+  });
+  if (hasErr) return;
+
+  // Lock form
+  document.getElementById(fid).querySelectorAll('input,textarea').forEach(el => el.disabled = true);
+  const btn = document.getElementById(`${fid}-btn`);
+  btn.disabled = true; btn.textContent = 'Starting…';
+
+  const summary = inputs.filter(f => values[f.key]).map(f => `${f.label}: ${values[f.key]}`).join(' · ');
+  addUserMessage(summary);
+  runWorkflow(activeWorkflow, values);
 }
 
-// ── PERSONA SWITCHER ──
-function togglePersonaMenu(e) {
-  e.stopPropagation();
-  var dd = document.getElementById('persona-dropdown');
-  if (dd) dd.classList.toggle('open');
+// ══════════════════════════════════════════════
+// FREE-TEXT CHAT
+// ══════════════════════════════════════════════
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text  = input.value.trim();
+  if (!text || isBotTyping) return;
+  input.value = '';
+  addUserMessage(text);
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    addBotMessage('Please select a workflow from the sidebar to get started. I\'ll then ask for the details needed to run it.');
+  }, 600);
 }
-document.addEventListener('click', function() {
-  var dd = document.getElementById('persona-dropdown');
-  if (dd) dd.classList.remove('open');
+
+// ══════════════════════════════════════════════
+// WORKFLOW EXECUTION via WebSocket
+// ══════════════════════════════════════════════
+function runWorkflow(workflow, values) {
+  const wfId  = workflow.id || workflow.workflow_id;
+  const name  = workflow.workflow_name || workflow.name || 'Workflow';
+  const steps = workflow.steps || [];
+  execTotal   = steps.length;
+  execDone    = 0;
+
+  // Build query params — issue number gets special treatment
+  const params = new URLSearchParams();
+  if (values.issue_number) params.set('issue', values.issue_number);
+  params.set('inputs', JSON.stringify(values));
+
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${proto}//${location.host}/ws/execute/${wfId}?${params}`;
+
+  showExecPanel(name, steps);
+  addBotMessage(`Running <strong>${esc(name)}</strong>… Watch the execution panel for live progress.`, '', true);
+
+  if (execWs) { try { execWs.close(); } catch(e){} }
+  execWs = new WebSocket(wsUrl);
+
+  execWs.onmessage = e => {
+    try { handleWsEvent(JSON.parse(e.data), steps); } catch(err) {}
+  };
+  execWs.onerror = () => {
+    setExecBadge('error', 'ERROR');
+    addBotMessage('⚠ Connection error. Please try again.');
+  };
+  execWs.onclose = () => {
+    document.getElementById('exec-bar-fill')?.classList.remove('running');
+  };
+}
+
+function handleWsEvent(ev, steps) {
+  const body = document.getElementById('exec-panel-body');
+  switch (ev.type) {
+    case 'step_start':
+      activateStep(ev.step_index ?? 0, ev.title || '');
+      break;
+    case 'step_log':
+      updateStepLog(ev.step_index ?? 0, ev.message || '');
+      if (body) body.scrollTop = body.scrollHeight;
+      break;
+    case 'step_done':
+      completeStep(ev.step_index ?? 0, ev.duration_ms ? `${(ev.duration_ms/1000).toFixed(1)}s` : '');
+      execDone++; updateProgress();
+      if (body) body.scrollTop = body.scrollHeight;
+      break;
+    case 'step_error':
+      errorStep(ev.step_index ?? 0, ev.error || '');
+      execDone++; updateProgress();
+      break;
+    case 'workflow_done':
+      setExecBadge('complete', 'COMPLETE');
+      document.getElementById('exec-bar-fill')?.classList.remove('running');
+      showResult(ev);
+      break;
+    case 'error':
+      setExecBadge('error', 'ERROR');
+      addBotMessage(`⚠ ${ev.message || 'Workflow error'}`);
+      break;
+  }
+}
+
+// ══════════════════════════════════════════════
+// EXECUTION PANEL
+// ══════════════════════════════════════════════
+function showExecPanel(name, steps) {
+  document.getElementById('exec-idle').style.display = 'none';
+  const runEl = document.getElementById('exec-running');
+  runEl.style.display = '';
+  setExecBadge('running', 'RUNNING');
+
+  runEl.innerHTML = `
+    <div class="exec-wf-name">${esc(name)}</div>
+    <div class="exec-progress-row">
+      <span class="exec-progress-label" id="exec-prog-label">0 / ${steps.length} steps</span>
+    </div>
+    <div class="exec-bar"><div class="exec-bar-fill running" id="exec-bar-fill" style="width:0%"></div></div>
+    <div id="exec-steps-list">
+      ${steps.map((s, i) => `
+        <div class="exec-step pending" id="estep-${i}">
+          <div class="exec-step-icon pending" id="estep-icon-${i}">${i+1}</div>
+          <div class="exec-step-body">
+            <div class="exec-step-title">${esc(s.title || `Step ${i+1}`)}</div>
+            <div class="exec-step-log" id="estep-log-${i}"></div>
+          </div>
+          <div class="exec-step-time" id="estep-time-${i}"></div>
+        </div>`).join('')}
+    </div>
+    <div id="exec-result"></div>`;
+}
+
+function activateStep(i) {
+  const el   = document.getElementById(`estep-${i}`);
+  const icon = document.getElementById(`estep-icon-${i}`);
+  if (!el) return;
+  el.className   = 'exec-step active';
+  icon.className = 'exec-step-icon active';
+  icon.innerHTML = '<span class="spin"></span>';
+}
+
+function updateStepLog(i, msg) {
+  const el = document.getElementById(`estep-log-${i}`);
+  if (el) el.textContent = msg.slice(0, 80);
+}
+
+function completeStep(i, elapsed) {
+  const el   = document.getElementById(`estep-${i}`);
+  const icon = document.getElementById(`estep-icon-${i}`);
+  const time = document.getElementById(`estep-time-${i}`);
+  const log  = document.getElementById(`estep-log-${i}`);
+  if (!el) return;
+  el.className     = 'exec-step done';
+  icon.className   = 'exec-step-icon done';
+  icon.textContent = '✓';
+  if (time) time.textContent = elapsed;
+  if (log)  log.textContent  = '';
+}
+
+function errorStep(i) {
+  const el   = document.getElementById(`estep-${i}`);
+  const icon = document.getElementById(`estep-icon-${i}`);
+  if (!el) return;
+  el.className     = 'exec-step error-step';
+  icon.className   = 'exec-step-icon error';
+  icon.textContent = '✕';
+}
+
+function updateProgress() {
+  const bar   = document.getElementById('exec-bar-fill');
+  const label = document.getElementById('exec-prog-label');
+  if (bar)   bar.style.width   = `${(execDone / execTotal) * 100}%`;
+  if (label) label.textContent = `${execDone} / ${execTotal} steps`;
+}
+
+function showResult(ev) {
+  const el = document.getElementById('exec-result');
+  if (!el) return;
+  const briefing    = ev.briefing    || '';
+  const actionItems = ev.action_items || [];
+  const escalations = ev.escalations  || [];
+
+  el.innerHTML = `
+    <div class="result-card">
+      <div class="result-card-title">Workflow Complete</div>
+      ${briefing ? `<div class="result-section">
+        <span class="result-section-label">Summary</span>
+        <div class="result-text">${esc(briefing)}</div>
+      </div>` : ''}
+      ${actionItems.length ? `<hr class="result-divider"><div class="result-section">
+        <span class="result-section-label">Action Items</span>
+        ${actionItems.map(a => `<div class="result-item"><span class="result-dot"></span><span>${esc(String(a))}</span></div>`).join('')}
+      </div>` : ''}
+      ${escalations.length ? `<hr class="result-divider"><div class="result-section">
+        <span class="result-section-label">Escalations</span>
+        ${escalations.map(e => `<div class="result-item"><span class="result-dot" style="background:#f5a623"></span><span>${esc(String(e))}</span></div>`).join('')}
+      </div>` : ''}
+    </div>`;
+
+  document.getElementById('exec-panel-body').scrollTop = 99999;
+
+  let msg = 'Workflow complete.';
+  if (briefing)          msg += `\n\n${briefing}`;
+  if (actionItems.length) msg += `\n\n**${actionItems.length} action item${actionItems.length > 1 ? 's' : ''} generated.**`;
+  addBotMessage(msg);
+}
+
+function setExecBadge(cls, text) {
+  const el = document.getElementById('exec-badge');
+  el.style.display = ''; el.className = `exec-badge ${cls}`; el.textContent = text;
+}
+
+// ══════════════════════════════════════════════
+// MESSAGES
+// ══════════════════════════════════════════════
+function addBotMessage(text, extraHtml = '', isHtml = false) {
+  const row = document.createElement('div');
+  row.className = 'msg-row msg-bot';
+  const content = isHtml ? text : fmt(text);
+  row.innerHTML = `
+    <div class="msg-avatar">∞</div>
+    <div class="msg-bubble msg-bubble-bot">
+      <div>${content}</div>
+      ${extraHtml}
+    </div>`;
+  document.getElementById('messages').appendChild(row);
+  scrollBottom();
+}
+
+function addUserMessage(text) {
+  const row = document.createElement('div');
+  row.className = 'msg-row msg-user';
+  row.innerHTML = `<div class="msg-bubble msg-bubble-user">${esc(text)}</div>`;
+  document.getElementById('messages').appendChild(row);
+  scrollBottom();
+}
+
+function showTyping() {
+  isBotTyping = true;
+  const row = document.createElement('div');
+  row.className = 'msg-row msg-bot'; row.id = 'typing-row';
+  row.innerHTML = `<div class="msg-avatar">∞</div><div class="msg-bubble msg-bubble-bot"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  document.getElementById('messages').appendChild(row);
+  scrollBottom();
+}
+
+function hideTyping() {
+  isBotTyping = false;
+  document.getElementById('typing-row')?.remove();
+}
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function scrollBottom() {
+  const el = document.getElementById('messages');
+  requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmt(text) {
+  return esc(text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+// ══════════════════════════════════════════════
+// RESIZABLE DIVIDER
+// ══════════════════════════════════════════════
+(function() {
+  const div  = document.getElementById('panel-divider');
+  const chat = div?.previousElementSibling;
+  const exec = div?.nextElementSibling;
+  if (!div || !chat || !exec) return;
+  let drag = false, sx = 0, scw = 0, sew = 0;
+  div.addEventListener('mousedown', e => {
+    drag = true; sx = e.clientX;
+    scw = chat.getBoundingClientRect().width;
+    sew = exec.getBoundingClientRect().width;
+    div.classList.add('dragging');
+    document.body.style.cssText += 'cursor:col-resize;user-select:none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const dx = e.clientX - sx;
+    chat.style.flex = 'none'; chat.style.width = Math.max(300, scw + dx) + 'px';
+    exec.style.width = Math.max(200, sew - dx) + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!drag) return; drag = false;
+    div.classList.remove('dragging');
+    document.body.style.cursor = document.body.style.userSelect = '';
+  });
+})();
+
+// ══════════════════════════════════════════════
+// EVENTS + INIT
+// ══════════════════════════════════════════════
+document.getElementById('send-btn').addEventListener('click', sendMessage);
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
-document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeModal(); });
-
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-init();
+loadSidebar();
+addBotMessage('👋 Hello! Select a workflow from the sidebar and I\'ll ask you for what I need to run it.');
 </script>
 </body>
 </html>
