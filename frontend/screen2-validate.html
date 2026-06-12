@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jacquard Loom — Validate &amp; Execute</title>
+<style>
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans Mono'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSansMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+
+:root {
+  --infinite-blue: #032D42;
+  --wasabi-green: #63DF4E;
+  --silver: #A8C8DC;
+  --bright-blue: #52B8FF;
+  --orange: #F5A623;
+  --font-sans: 'ServiceNow Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'ServiceNow Sans Mono', 'Consolas', monospace;
+  --surface-1: #042538;
+  --surface-2: #063347;
+  --surface-3: #0a3d55;
+  --border-subtle: rgba(82,184,255,0.12);
+  --border-mid: rgba(82,184,255,0.22);
+  --border-green: rgba(99,223,78,0.3);
+  --border-orange: rgba(245,166,35,0.3);
+  --green-bg: rgba(99,223,78,0.08);
+  --orange-bg: rgba(245,166,35,0.08);
+  --text-primary: #FFFFFF;
+  --text-secondary: #A8C8DC;
+  --text-muted: #5A8A9F;
+  --red: #FF5A5A;
+  --red-bg: rgba(255,90,90,0.08);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; background: var(--infinite-blue); color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; }
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100; overflow: visible !important;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 52px;
+  background: rgba(3,45,66,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 600; color: var(--text-primary);
+  cursor: pointer; user-select: none; letter-spacing: -0.01em; text-decoration: none;
+}
+.nav-stepper { display: flex; align-items: center; gap: 0; }
+.nav-step {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 500; color: var(--text-muted); padding: 4px 10px;
+}
+.nav-step.done { color: var(--wasabi-green); }
+.nav-step.active { color: var(--text-primary); }
+.step-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  background: var(--surface-3); border: 1px solid var(--border-subtle);
+  color: var(--text-muted); flex-shrink: 0;
+}
+.nav-step.done .step-num { background: var(--green-bg); border-color: var(--border-green); color: var(--wasabi-green); font-size: 12px; }
+.nav-step.active .step-num { background: var(--wasabi-green); border-color: var(--wasabi-green); color: #032D42; }
+.step-sep { width: 24px; height: 1px; background: var(--border-subtle); }
+.nav-wf { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+.wf-badge { font-family: var(--font-mono); font-size: 11px; background: var(--surface-3); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 2px 7px; color: var(--bright-blue); }
+
+/* ── PAGE ── */
+.page { max-width: 760px; margin: 0 auto; padding: 36px 24px 160px; }
+
+/* ── PAGE HEADER ── */
+.page-header { margin-bottom: 24px; }
+.page-eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--wasabi-green); margin-bottom: 6px; }
+.page-eyebrow.blue { color: var(--bright-blue); }
+.page-title { font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; line-height: 1.2; }
+.page-sub { font-size: 13px; color: var(--text-muted); margin-top: 5px; line-height: 1.5; }
+
+/* ── TOOL EXECUTION PLAN BANNER ── */
+.tool-res-bar {
+  background: var(--surface-1); border: 1px solid var(--border-mid);
+  border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;
+}
+.res-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.res-title {
+  font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-secondary);
+}
+.res-loading {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--text-muted); font-family: var(--font-mono); font-size: 12px;
+  padding: 8px 0;
+}
+.res-spinner { width: 13px; height: 13px; border: 1.5px solid var(--border-mid); border-top-color: var(--bright-blue); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+.res-summary { display: flex; gap: 12px; }
+.res-stat {
+  flex: 1; display: flex; align-items: center; gap: 14px;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 9px; padding: 14px 18px;
+}
+.res-stat.existing { border-color: rgba(99,223,78,0.2); }
+.res-stat.generating { border-color: rgba(245,166,35,0.2); }
+.res-stat-icon {
+  width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.res-stat.existing .res-stat-icon { background: rgba(99,223,78,0.1); }
+.res-stat.generating .res-stat-icon { background: rgba(245,166,35,0.1); }
+.res-stat-body { display: flex; flex-direction: column; gap: 2px; }
+.res-count {
+  font-size: 22px; font-weight: 700; font-family: var(--font-mono);
+  line-height: 1;
+}
+.res-stat.existing .res-count { color: var(--wasabi-green); }
+.res-stat.generating .res-count { color: var(--orange); }
+.res-stat-label { font-size: 12px; color: var(--text-muted); }
+.res-error { color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); padding: 8px 0; }
+
+/* ── GLOBAL EDIT BAR ── */
+.global-edit {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-1); border: 1px solid var(--border-mid);
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 20px;
+  transition: border-color 0.15s;
+}
+.global-edit:focus-within { border-color: var(--border-green); }
+.global-edit-icon { font-size: 14px; flex-shrink: 0; }
+.global-edit input { flex: 1; background: none; border: none; outline: none; font-family: var(--font-sans); font-size: 13px; color: var(--text-primary); }
+.global-edit input::placeholder { color: var(--text-muted); }
+.btn-apply {
+  background: var(--green-bg); border: 1px solid var(--border-green);
+  color: var(--wasabi-green); font-family: var(--font-sans);
+  font-size: 12px; font-weight: 600; padding: 6px 14px;
+  border-radius: 6px; cursor: pointer; white-space: nowrap; transition: background 0.15s; flex-shrink: 0;
+}
+.btn-apply:hover { background: rgba(99,223,78,0.15); }
+
+/* ── STEPS TOOLBAR ── */
+.steps-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.steps-count { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+.steps-count span { color: var(--text-secondary); font-weight: 600; }
+.btn-add-step {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: 1px solid var(--border-subtle);
+  color: var(--text-secondary); font-family: var(--font-sans);
+  font-size: 12px; font-weight: 500; padding: 6px 12px;
+  border-radius: 6px; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.btn-add-step:hover { border-color: var(--border-green); color: var(--wasabi-green); background: var(--green-bg); }
+
+/* ── STEP CARD ── */
+.steps-list { display: flex; flex-direction: column; gap: 10px; }
+.step-card {
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  border-radius: 12px; overflow: hidden; transition: border-color 0.15s;
+  animation: fadeUp 0.18s ease both;
+}
+.step-card:hover { border-color: var(--border-mid); }
+.step-card.editing { border-color: var(--border-green); }
+.step-card.dragging { opacity: 0.45; }
+.step-main { display: flex; align-items: flex-start; gap: 14px; padding: 16px 16px 12px; }
+.step-drag { display: flex; align-items: center; padding-top: 2px; color: var(--text-muted); cursor: grab; flex-shrink: 0; opacity: 0.5; transition: opacity 0.15s; }
+.step-card:hover .step-drag { opacity: 1; }
+.step-drag:active { cursor: grabbing; }
+.step-num-badge {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--surface-3); border: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--text-secondary);
+  flex-shrink: 0; font-family: var(--font-mono);
+}
+.step-content { flex: 1; min-width: 0; }
+.step-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.step-title { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+.step-type-badge { font-size: 10px; font-family: var(--font-mono); padding: 2px 7px; border-radius: 4px; flex-shrink: 0; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+.badge-query    { background: rgba(82,184,255,0.1); color: var(--bright-blue); }
+.badge-action   { background: rgba(99,223,78,0.1); color: var(--wasabi-green); }
+.badge-logic    { background: rgba(245,166,35,0.1); color: var(--orange); }
+.badge-notify   { background: rgba(168,200,220,0.1); color: var(--silver); }
+.badge-custom   { background: var(--surface-3); color: var(--text-muted); }
+.step-desc { font-size: 12px; color: var(--text-muted); line-height: 1.55; }
+
+/* Tool source row inside step card */
+.step-tool-row { padding: 0 16px 12px 58px; display: flex; align-items: center; gap: 8px; min-height: 28px; }
+.tool-source-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 5px; padding: 3px 9px;
+  font-size: 11px; font-family: var(--font-mono);
+}
+.tool-source-pill.from-repo {
+  background: rgba(99,223,78,0.07); border: 1px solid rgba(99,223,78,0.2);
+}
+.tool-source-pill.will-generate {
+  background: rgba(245,166,35,0.07); border: 1px solid rgba(245,166,35,0.25);
+}
+.pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.pill-dot.mcp      { background: var(--wasabi-green); }
+.pill-dot.open_api { background: var(--bright-blue); }
+.pill-dot.generated { background: var(--orange); }
+.pill-dot.custom   { background: var(--silver); }
+.pill-tool-name { color: var(--text-secondary); }
+.pill-source-tag {
+  font-size: 10px; padding: 1px 5px; border-radius: 3px;
+  font-family: var(--font-sans); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.from-repo .pill-source-tag { color: var(--wasabi-green); }
+.will-generate .pill-source-tag { color: var(--orange); }
+.conf-badge { font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); }
+.tool-resolving { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); display: flex; align-items: center; gap: 6px; }
+.tool-resolving .mini-spin { width: 10px; height: 10px; border: 1.5px solid var(--border-mid); border-top-color: var(--text-muted); border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+/* Step actions */
+.step-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+.step-card:hover .step-actions { opacity: 1; }
+.step-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 5px; border-radius: 5px; font-size: 12px; transition: color 0.12s, background 0.12s; display: flex; align-items: center; }
+.step-btn:hover { color: var(--text-primary); background: var(--surface-3); }
+.step-btn.del:hover { color: var(--red); background: var(--red-bg); }
+
+/* Inline edit area */
+.step-edit-area { display: none; border-top: 1px solid var(--border-subtle); padding: 14px 16px; background: var(--surface-2); }
+.step-card.editing .step-edit-area { display: block; }
+.edit-row { display: flex; gap: 8px; align-items: flex-start; }
+.edit-input {
+  flex: 1; background: var(--surface-3); border: 1px solid var(--border-subtle); border-radius: 7px;
+  padding: 9px 12px; font-family: var(--font-sans); font-size: 13px;
+  color: var(--text-primary); outline: none; resize: none; transition: border-color 0.15s; line-height: 1.5; min-height: 60px;
+}
+.edit-input:focus { border-color: var(--border-green); }
+.edit-actions { display: flex; flex-direction: column; gap: 6px; }
+.btn-save-edit { background: var(--wasabi-green); border: none; color: #032D42; font-family: var(--font-sans); font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 6px; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
+.btn-save-edit:hover { opacity: 0.88; }
+.btn-cancel-edit { background: none; border: 1px solid var(--border-subtle); color: var(--text-muted); font-family: var(--font-sans); font-size: 12px; padding: 8px 14px; border-radius: 6px; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+.btn-cancel-edit:hover { border-color: var(--border-mid); color: var(--text-secondary); }
+.edit-hint { font-size: 11px; color: var(--text-muted); margin-top: 8px; font-style: italic; }
+
+/* ── WORKFLOW NAME ── */
+.name-section { margin-top: 24px; padding: 18px 20px; background: var(--surface-2); border: 1px solid var(--border-mid); border-radius: 10px; }
+.name-section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--wasabi-green); margin-bottom: 4px; }
+.name-section-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+.workflow-name-input { width: 100%; background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px; font-family: var(--font-sans); font-size: 14px; color: var(--text-primary); outline: none; transition: border-color 0.18s; }
+.workflow-name-input::placeholder { color: var(--text-muted); }
+.workflow-name-input:focus { border-color: var(--border-green); }
+.workflow-name-input.error { border-color: var(--red); }
+
+/* ── EXECUTION PHASE ── */
+.progress-wrap { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px; }
+.progress-bar-outer { flex: 1; height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+.progress-bar-inner { height: 100%; background: var(--wasabi-green); border-radius: 3px; width: 0%; transition: width 0.5s ease; }
+.progress-label { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+.progress-label span { color: var(--wasabi-green); }
+
+.trace-list { display: flex; flex-direction: column; gap: 10px; }
+.trace-card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 12px; overflow: hidden; transition: border-color 0.3s; }
+.trace-card.running { border-color: rgba(82,184,255,0.4); }
+.trace-card.done    { border-color: var(--border-green); }
+.trace-card.error   { border-color: rgba(255,90,90,0.4); }
+.trace-main { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+.trace-status { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.3s; }
+.trace-status.pending { background: var(--surface-3); border: 1px solid var(--border-subtle); }
+.trace-status.running { background: rgba(82,184,255,0.12); border: 1px solid rgba(82,184,255,0.3); }
+.trace-status.done    { background: var(--green-bg); border: 1px solid var(--border-green); }
+.trace-status.error   { background: var(--red-bg); border: 1px solid rgba(255,90,90,0.3); }
+.status-spinner { width: 14px; height: 14px; border: 2px solid rgba(82,184,255,0.2); border-top-color: var(--bright-blue); border-radius: 50%; animation: spin 0.75s linear infinite; }
+.status-check { color: var(--wasabi-green); font-size: 13px; font-weight: 700; }
+.status-cross { color: var(--red); font-size: 13px; }
+.status-dot   { width: 8px; height: 8px; border-radius: 50%; background: var(--border-mid); }
+.trace-content { flex: 1; min-width: 0; }
+.trace-title { font-size: 13px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+.trace-card.pending .trace-title { color: var(--text-muted); }
+.trace-meta { display: flex; align-items: center; gap: 10px; margin-top: 3px; }
+.trace-tool { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+.tool-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.tool-dot.mcp       { background: var(--wasabi-green); }
+.tool-dot.open_api  { background: var(--bright-blue); }
+.tool-dot.generated { background: var(--orange); }
+.tool-dot.custom    { background: var(--silver); }
+.trace-gen-badge { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--orange); background: var(--orange-bg); border: 1px solid var(--border-orange); border-radius: 3px; padding: 1px 5px; font-family: var(--font-sans); }
+.trace-duration { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-left: auto; flex-shrink: 0; }
+.trace-duration.done { color: var(--wasabi-green); }
+.trace-log { display: none; border-top: 1px solid var(--border-subtle); background: #021d2e; padding: 12px 16px; font-family: var(--font-mono); font-size: 11px; line-height: 1.7; max-height: 160px; overflow-y: auto; }
+.trace-card.running .trace-log, .trace-card.done .trace-log { display: block; }
+.log-line { display: flex; gap: 10px; }
+.log-ts  { color: var(--text-muted); flex-shrink: 0; opacity: 0.5; }
+.log-line.info  .log-msg { color: var(--text-secondary); }
+.log-line.ok    .log-msg { color: var(--wasabi-green); }
+.log-line.warn  .log-msg { color: var(--orange); }
+.log-line.err   .log-msg { color: var(--red); }
+.log-line.error .log-msg { color: var(--red); }
+
+/* Exec error box */
+.exec-error-box {
+  background: var(--red-bg); border: 1px solid rgba(255,90,90,0.3);
+  border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.exec-error-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.exec-error-title { font-size: 13px; font-weight: 600; color: var(--red); margin-bottom: 4px; }
+.exec-error-msg { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+.btn-retry {
+  margin-top: 10px; background: none; border: 1px solid rgba(255,90,90,0.4);
+  color: var(--red); font-family: var(--font-sans); font-size: 12px; font-weight: 600;
+  padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: background 0.15s;
+}
+.btn-retry:hover { background: var(--red-bg); }
+
+/* Complete banner */
+.complete-banner { display: none; background: var(--green-bg); border: 1px solid var(--border-green); border-radius: 12px; padding: 20px 24px; margin-top: 24px; animation: fadeUp 0.3s ease; }
+.complete-banner.show { display: flex; align-items: center; gap: 16px; }
+.complete-icon { width: 40px; height: 40px; border-radius: 50%; background: rgba(99,223,78,0.15); border: 1px solid var(--border-green); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.complete-title { font-size: 15px; font-weight: 700; color: var(--wasabi-green); letter-spacing: -0.01em; }
+.complete-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── GENERATED TOOLS PANEL ── */
+.gen-panel {
+  margin-top: 28px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 28px;
+}
+.gen-panel-eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--orange); margin-bottom: 6px; }
+.gen-panel-title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+.gen-panel-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+
+.gen-tool-card {
+  background: var(--surface-1); border: 1px solid var(--border-orange);
+  border-radius: 12px; overflow: hidden; margin-bottom: 14px;
+  animation: fadeUp 0.2s ease;
+  transition: border-color 0.2s;
+}
+.gen-tool-card.added { border-color: var(--border-green); }
+
+.gen-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 12px; border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-2);
+}
+.gen-card-badge {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--orange);
+}
+.gen-card-step { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+
+.gen-card-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+.gen-field-group { display: flex; flex-direction: column; gap: 6px; }
+.gen-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.gen-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); }
+.gen-input, .gen-textarea, .gen-select {
+  background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 7px;
+  padding: 9px 12px; font-family: var(--font-sans); font-size: 13px;
+  color: var(--text-primary); outline: none; transition: border-color 0.15s;
+  width: 100%;
+}
+.gen-input:focus, .gen-textarea:focus, .gen-select:focus { border-color: var(--border-green); }
+.gen-textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+.gen-select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235A8A9F' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+
+.gen-io-row { display: flex; flex-direction: column; gap: 8px; }
+.gen-io { display: flex; align-items: flex-start; gap: 8px; }
+.gen-io-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); white-space: nowrap; min-width: 52px; padding-top: 2px; }
+.gen-io-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.io-tag { font-size: 10px; font-family: var(--font-mono); background: var(--surface-3); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 2px 7px; color: var(--text-secondary); }
+.io-tag.output { border-color: rgba(99,223,78,0.15); color: rgba(99,223,78,0.7); }
+
+.gen-card-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-top: 1px solid var(--border-subtle); background: var(--surface-2);
+}
+.gen-card-status { font-size: 12px; color: var(--text-muted); }
+.gen-card-status.ok   { color: var(--wasabi-green); font-weight: 600; }
+.gen-card-status.warn { color: var(--orange); }
+.gen-card-status.err  { color: var(--red); }
+.btn-add-repo {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--orange-bg); border: 1px solid var(--border-orange);
+  color: var(--orange); font-family: var(--font-sans); font-size: 13px; font-weight: 700;
+  padding: 9px 20px; border-radius: 8px; cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+.btn-add-repo:hover { background: rgba(245,166,35,0.14); }
+.btn-add-repo:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── GEN TOOL TABS ── */
+.gen-tabs {
+  display: flex; gap: 1px; padding: 0 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-2);
+}
+.gen-tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--text-muted); font-family: var(--font-sans);
+  font-size: 12px; font-weight: 600; padding: 11px 14px;
+  cursor: pointer; margin-bottom: -1px; white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.gen-tab:hover { color: var(--text-secondary); }
+.gen-tab.active { color: var(--wasabi-green); border-color: var(--wasabi-green); }
+.gen-tab-panels { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.gen-tab-panel { display: none; flex-direction: column; gap: 14px; }
+.gen-tab-panel.active { display: flex; }
+.btn-gen-schema {
+  width: 100%; padding: 10px 16px; margin-top: 2px;
+  background: var(--green-bg); color: var(--wasabi-green);
+  border: 1px solid var(--border-green); border-radius: 7px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: var(--font-sans); transition: background 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-gen-schema:hover:not(:disabled) { background: rgba(99,223,78,0.15); }
+.btn-gen-schema:disabled { opacity: 0.45; cursor: not-allowed; }
+.gen-ai-notice {
+  display: none; padding: 9px 12px; border-radius: 7px;
+  background: var(--green-bg); border: 1px solid var(--border-green);
+  font-size: 12px; color: var(--wasabi-green); font-weight: 500;
+  align-items: center; gap: 7px;
+}
+.gen-ai-notice.show { display: flex; }
+.gen-script-area {
+  font-family: var(--font-mono) !important;
+  font-size: 11.5px !important;
+  min-height: 200px; line-height: 1.65 !important;
+  background: #021d2e !important;
+}
+
+/* ── CTA BAR ── */
+.cta-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(4,37,56,0.96); backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-subtle);
+  padding: 14px 32px;
+  display: flex; align-items: center; justify-content: space-between; z-index: 90;
+}
+.cta-status { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-muted); }
+.pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--wasabi-green); animation: pulse 2s ease-in-out infinite; flex-shrink: 0; }
+.pulse-dot.blue  { background: var(--bright-blue); }
+.pulse-dot.green { background: var(--wasabi-green); animation: none; }
+.cta-right { display: flex; align-items: center; gap: 10px; }
+.btn-back {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: 1px solid var(--border-subtle);
+  color: var(--text-muted); font-family: var(--font-sans);
+  font-size: 13px; padding: 9px 18px; border-radius: 8px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-back:hover { border-color: var(--border-mid); color: var(--text-secondary); }
+.btn-cta {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--wasabi-green); color: #032D42;
+  font-family: var(--font-sans); font-size: 14px; font-weight: 700;
+  padding: 10px 24px; border: none; border-radius: 8px;
+  cursor: pointer; letter-spacing: -0.01em; transition: opacity 0.15s, transform 0.1s;
+}
+.btn-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-cta:active { transform: translateY(0); }
+.btn-cta:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; top: 64px; right: 20px;
+  background: var(--surface-3); border: 1px solid var(--border-mid);
+  border-radius: 8px; padding: 10px 16px;
+  font-size: 13px; color: var(--text-primary);
+  display: flex; align-items: center; gap: 8px;
+  z-index: 300; transform: translateX(120%);
+  transition: transform 0.28s cubic-bezier(.22,.68,0,1.35);
+}
+.toast.show { transform: translateX(0); }
+.toast.ok  { border-color: rgba(99,223,78,0.4); }
+.toast.err { border-color: rgba(255,90,90,0.4); }
+
+/* ── PERSONA ── */
+.persona-wrapper { display: flex; align-items: center; gap: 8px; }
+.persona-static-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; user-select: none; }
+.persona-dropdown { position: relative; display: flex; align-items: center; gap: 7px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--text-primary); cursor: pointer; user-select: none; transition: border-color 0.15s; }
+.persona-dropdown:hover { border-color: var(--border-mid); }
+.persona-dropdown.open  { border-color: var(--border-green); }
+.persona-chevron { color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
+.persona-dropdown.open .persona-chevron { transform: rotate(180deg); }
+.persona-menu { display: none; position: absolute; top: calc(100% + 8px); right: 0; background: var(--surface-2); border: 1px solid var(--border-mid); border-radius: 10px; padding: 6px; min-width: 180px; z-index: 9999; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+.persona-dropdown.open .persona-menu { display: block; }
+.persona-menu-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: background 0.12s; white-space: nowrap; }
+.persona-menu-item:hover { background: var(--surface-3); color: var(--text-primary); }
+.persona-menu-item.current { color: var(--wasabi-green); pointer-events: none; }
+.persona-menu-divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+.persona-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.persona-dot.admin     { background: var(--bright-blue); }
+.persona-dot.fulfiller { background: var(--wasabi-green); }
+
+@keyframes spin   { to { transform: rotate(360deg); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse  { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="screen1-build.html">
+    <svg width="40" height="24" viewBox="0 0 140 100">
+      <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#63DF4E" stroke-width="8" stroke-linecap="round"/>
+      <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#A8C8DC" stroke-width="8" stroke-linecap="round"/>
+    </svg>
+    Jacquard Loom
+  </a>
+  <div class="nav-stepper">
+    <div class="nav-step done"><div class="step-num">✓</div>Build</div>
+    <div class="step-sep"></div>
+    <div class="nav-step active" id="nav-step-2"><div class="step-num">2</div>Validate</div>
+    <div class="step-sep"></div>
+    <div class="nav-step" id="nav-step-3"><div class="step-num">3</div>Execute</div>
+  </div>
+  <div class="nav-wf">Workflow&nbsp;<span class="wf-badge" id="wf-id-display">—</span></div>
+  <div class="persona-wrapper">
+    <span class="persona-static-label">Persona:</span>
+    <div class="persona-dropdown" id="persona-dropdown" onclick="togglePersonaMenu(event)">
+      <span>AI Admin</span>
+      <svg class="persona-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4 6,8 10,4"/></svg>
+      <div class="persona-menu" onclick="event.stopPropagation()">
+        <div class="persona-menu-item current"><span class="persona-dot admin"></span>AI Admin</div>
+        <div class="persona-menu-divider"></div>
+        <div class="persona-menu-item" onclick="window.location.href='screen7-fulfiller.html'"><span class="persona-dot fulfiller"></span>Fulfiller</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- ═══ PHASE: REVIEW ═══ -->
+  <div id="phase-review">
+    <div class="page-header">
+      <div class="page-eyebrow">Step Validation</div>
+      <div class="page-title">Review your workflow steps</div>
+      <div class="page-sub">Jacquard Loom extracted these steps. Edit, reorder, or add steps — then start weaving to execute.</div>
+    </div>
+
+    <!-- Tool execution plan banner -->
+    <div class="tool-res-bar" id="tool-res-bar">
+      <div class="res-header">
+        <div class="res-title">Tool Execution Plan</div>
+      </div>
+      <div class="res-loading" id="res-loading">
+        <div class="res-spinner"></div>
+        Resolving tools for this workflow…
+      </div>
+      <div class="res-summary" id="res-summary" style="display:none"></div>
+    </div>
+
+    <!-- Global NL edit -->
+    <div class="global-edit">
+      <div class="global-edit-icon">⚡</div>
+      <input type="text" id="global-input" placeholder='Apply a change to all steps — e.g. "add error handling" or "make all steps async"' />
+      <button class="btn-apply" id="global-btn">Apply to all</button>
+    </div>
+
+    <!-- Steps toolbar -->
+    <div class="steps-toolbar">
+      <div class="steps-count"><span id="step-count">0</span> steps extracted</div>
+      <button class="btn-add-step" id="add-btn">
+        <svg width="11" height="11" viewBox="0 0 11 11" stroke="currentColor" stroke-width="2" fill="none"><line x1="5.5" y1="1" x2="5.5" y2="10"/><line x1="1" y1="5.5" x2="10" y2="5.5"/></svg>
+        Add step
+      </button>
+    </div>
+
+    <!-- Steps list -->
+    <div class="steps-list" id="steps-list"></div>
+
+    <!-- Workflow name -->
+    <div class="name-section">
+      <div class="name-section-label">Name your workflow</div>
+      <div class="name-section-hint">Give this workflow a name before weaving begins.</div>
+      <input class="workflow-name-input" id="workflow-name-input" type="text" placeholder="e.g. Incident Triage and Resolution" />
+    </div>
+  </div>
+
+  <!-- ═══ PHASE: EXECUTE ═══ -->
+  <div id="phase-execute" style="display:none">
+    <div class="page-header">
+      <div class="page-eyebrow blue" id="exec-eyebrow">Live Execution</div>
+      <div class="page-title" id="exec-title">Weaving your workflow…</div>
+      <div class="page-sub" id="exec-sub">Executing each step in sequence. Results stream in real time.</div>
+    </div>
+
+    <!-- Error box (shown if WS fails) -->
+    <div class="exec-error-box" id="exec-error" style="display:none">
+      <div class="exec-error-icon">⚠</div>
+      <div>
+        <div class="exec-error-title">Execution failed</div>
+        <div class="exec-error-msg" id="exec-error-msg"></div>
+        <button class="btn-retry" onclick="retryExec()">Retry</button>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-bar-outer"><div class="progress-bar-inner" id="progress-bar"></div></div>
+      <div class="progress-label"><span id="progress-done">0</span> / <span id="progress-total">0</span> steps</div>
+    </div>
+
+    <!-- Trace cards -->
+    <div class="trace-list" id="trace-list"></div>
+
+    <!-- Complete banner -->
+    <div class="complete-banner" id="complete-banner">
+      <div class="complete-icon">✓</div>
+      <div>
+        <div class="complete-title">Workflow woven successfully</div>
+        <div class="complete-sub" id="complete-sub">All steps completed.</div>
+      </div>
+    </div>
+
+    <!-- Generated tools panel (shown post-execution if any generated tools exist) -->
+    <div class="gen-panel" id="gen-panel" style="display:none">
+      <div class="gen-panel-eyebrow">New tools generated</div>
+      <div class="gen-panel-title">Add generated tools to your repository</div>
+      <div class="gen-panel-sub">Jacquard Loom created these tools on the fly during execution. Review and edit them, then add to your tool repository for reuse in future workflows.</div>
+      <div id="gen-tools-list"></div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- CTA BAR -->
+<div class="cta-bar">
+  <div class="cta-status">
+    <div class="pulse-dot" id="cta-dot"></div>
+    <span id="cta-status-text">Review steps, then proceed</span>
+  </div>
+  <div class="cta-right">
+    <button class="btn-back" id="btn-back" onclick="handleBack()">
+      <svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="2" fill="none"><polyline points="8,2 4,6 8,10"/></svg>
+      Back
+    </button>
+    <button class="btn-cta" id="cta-btn" onclick="handleCTA()">
+      <span id="cta-label">Looks good, start weaving</span>
+      <svg width="14" height="10" viewBox="0 0 140 100">
+        <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#032D42" stroke-width="10" stroke-linecap="round"/>
+        <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#032D42" stroke-width="10" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span id="toast-icon">✓</span><span id="toast-msg"></span></div>
+
+<script>
+var BASE = 'http://localhost:3000';
+var workflowId = null;
+var steps = [];
+var toolMatches = {};        // step_id → match object
+var generatedToolsData = []; // [{match, step, inputs, outputs}]
+var uid = 100;
+var dragSrcIdx = null;
+var currentPhase = 'review';
+var activeWS = null;
+var execStartTime = 0;
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function init() {
+  try {
+    workflowId = localStorage.getItem('weave_workflow_id');
+    var raw = localStorage.getItem('weave_steps');
+    if (raw) steps = JSON.parse(raw);
+  } catch(e) { steps = []; }
+
+  if (!workflowId || !steps.length) { window.location.href = 'screen1-build.html'; return; }
+
+  document.getElementById('wf-id-display').textContent = workflowId;
+
+  var savedName = localStorage.getItem('weave_workflow_name') || '';
+  if (savedName) document.getElementById('workflow-name-input').value = savedName;
+
+  render();
+  resolveTools();
+
+  document.getElementById('global-btn').addEventListener('click', applyGlobal);
+  document.getElementById('global-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') applyGlobal(); });
+  document.getElementById('add-btn').addEventListener('click', addStep);
+}
+
+// ── TOOL RESOLUTION (on load) ─────────────────────────────────────────────────
+async function resolveTools() {
+  try {
+    var resp = await fetch(BASE + '/api/steps/match-tools', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow_id: workflowId, steps: steps })
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var data = await resp.json();
+    var matches = data.matches || [];
+
+    toolMatches = {};
+    matches.forEach(function(m) { toolMatches[m.step_id] = m; });
+
+    renderToolResBar(matches);
+    renderStepToolPills();
+  } catch(e) {
+    document.getElementById('res-loading').innerHTML =
+      '<span class="res-error">Tool resolution unavailable — is the backend running?</span>';
+  }
+}
+
+function renderToolResBar(matches) {
+  var repoCount = matches.filter(function(m) { return m.type !== 'generated'; }).length;
+  var genCount  = matches.filter(function(m) { return m.type === 'generated'; }).length;
+
+  document.getElementById('res-loading').style.display = 'none';
+  var summary = document.getElementById('res-summary');
+
+  var html =
+    '<div class="res-stat existing">' +
+      '<div class="res-stat-icon">' +
+        '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#63DF4E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+          '<rect x="2" y="2" width="14" height="14" rx="3"/>' +
+          '<polyline points="5,9 7.5,11.5 13,6"/>' +
+        '</svg>' +
+      '</div>' +
+      '<div class="res-stat-body">' +
+        '<div class="res-count">' + repoCount + '</div>' +
+        '<div class="res-stat-label">' + (repoCount === 1 ? 'Existing tool' : 'Existing tools') + '</div>' +
+      '</div>' +
+    '</div>';
+
+  if (genCount > 0) {
+    html +=
+      '<div class="res-stat generating">' +
+        '<div class="res-stat-icon">' +
+          '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#F5A623" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+            '<polygon points="9,2 16,6 16,12 9,16 2,12 2,6"/>' +
+            '<line x1="9" y1="6" x2="9" y2="10"/>' +
+            '<circle cx="9" cy="12.5" r="0.8" fill="#F5A623"/>' +
+          '</svg>' +
+        '</div>' +
+        '<div class="res-stat-body">' +
+          '<div class="res-count">' + genCount + '</div>' +
+          '<div class="res-stat-label">' + (genCount === 1 ? 'To be generated' : 'To be generated') + '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  summary.innerHTML = html;
+  summary.style.display = 'flex';
+}
+
+function renderStepToolPills() {
+  steps.forEach(function(s) {
+    var row = document.getElementById('tool-row-' + s.id);
+    if (!row) return;
+    var m = toolMatches[s.id];
+    if (!m) { row.innerHTML = ''; return; }
+
+    var isRepo = m.type !== 'generated';
+    var pillClass = isRepo ? 'from-repo' : 'will-generate';
+    var dotClass  = m.type || 'custom';
+    var sourceLabel = isRepo ? 'Existing' : 'To be generated';
+    var confPct = m.confidence ? Math.round(m.confidence * 100) : 0;
+
+    row.innerHTML =
+      '<div class="tool-source-pill ' + pillClass + '">' +
+        '<span class="pill-dot ' + dotClass + '"></span>' +
+        '<span class="pill-tool-name">' + esc(m.tool) + '</span>' +
+        '<span class="pill-source-tag">' + sourceLabel + '</span>' +
+      '</div>' +
+      '<span class="conf-badge">' + confPct + '% match</span>';
+  });
+}
+
+// ── RENDER STEP CARDS ─────────────────────────────────────────────────────────
+var TYPE_CLASS = { query: 'badge-query', action: 'badge-action', logic: 'badge-logic', notify: 'badge-notify' };
+
+function render() {
+  document.getElementById('step-count').textContent = steps.length;
+  var list = document.getElementById('steps-list');
+  list.innerHTML = steps.map(function(s, i) { return stepHTML(s, i); }).join('');
+
+  list.querySelectorAll('.step-card').forEach(function(card, i) {
+    card.addEventListener('dragstart', function(e) { onDragStart(e, i); });
+    card.addEventListener('dragover',  function(e) { onDragOver(e, i); });
+    card.addEventListener('dragleave', function()  { card.style.outline = ''; });
+    card.addEventListener('drop',      function(e) { onDrop(e, i); });
+    card.addEventListener('dragend',   function()  { onDragEnd(); });
+  });
+}
+
+function stepHTML(s, i) {
+  var badgeClass = TYPE_CLASS[s.type] || 'badge-custom';
+  var badgeLabel = s.type ? s.type.charAt(0).toUpperCase() + s.type.slice(1) : 'Custom';
+  var m = toolMatches[s.id];
+
+  var toolRowHTML;
+  if (m) {
+    var isRepo = m.type !== 'generated';
+    var pillClass = isRepo ? 'from-repo' : 'will-generate';
+    var dotClass = m.type || 'custom';
+    var sourceLabel = isRepo ? 'Existing' : 'To be generated';
+    var confPct = m.confidence ? Math.round(m.confidence * 100) : 0;
+    toolRowHTML =
+      '<div class="tool-source-pill ' + pillClass + '">' +
+        '<span class="pill-dot ' + dotClass + '"></span>' +
+        '<span class="pill-tool-name">' + esc(m.tool) + '</span>' +
+        '<span class="pill-source-tag">' + sourceLabel + '</span>' +
+      '</div>' +
+      '<span class="conf-badge">' + confPct + '% match</span>';
+  } else {
+    toolRowHTML = '<div class="tool-resolving"><div class="mini-spin"></div>Resolving…</div>';
+  }
+
+  return '<div class="step-card" id="card-' + s.id + '" draggable="true">' +
+    '<div class="step-main">' +
+      '<div class="step-drag" title="Drag to reorder">' +
+        '<svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="7" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/><circle cx="3" cy="13" r="1.5"/><circle cx="7" cy="13" r="1.5"/></svg>' +
+      '</div>' +
+      '<div class="step-num-badge">' + (i + 1) + '</div>' +
+      '<div class="step-content">' +
+        '<div class="step-header">' +
+          '<div class="step-title">' + esc(s.title) + '</div>' +
+          '<span class="step-type-badge ' + badgeClass + '">' + badgeLabel + '</span>' +
+        '</div>' +
+        '<div class="step-desc">' + esc(s.description) + '</div>' +
+      '</div>' +
+      '<div class="step-actions">' +
+        '<button class="step-btn" onclick="editStep(\'' + s.id + '\')" title="Edit">' +
+          '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2l2 2-7 7H2v-2L9 2z"/></svg>' +
+        '</button>' +
+        '<button class="step-btn del" onclick="deleteStep(\'' + s.id + '\')" title="Delete">' +
+          '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="2" y1="2" x2="11" y2="11"/><line x1="11" y1="2" x2="2" y2="11"/></svg>' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="step-tool-row" id="tool-row-' + s.id + '">' + toolRowHTML + '</div>' +
+    '<div class="step-edit-area" id="edit-' + s.id + '">' +
+      '<div class="edit-row">' +
+        '<textarea class="edit-input" id="input-' + s.id + '" rows="3">' + esc(s.title + '. ' + s.description) + '</textarea>' +
+        '<div class="edit-actions">' +
+          '<button class="btn-save-edit" onclick="saveEdit(\'' + s.id + '\')">Save</button>' +
+          '<button class="btn-cancel-edit" onclick="cancelEdit(\'' + s.id + '\')">Cancel</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="edit-hint">Describe the change in plain English — Jacquard Loom will update the step.</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// ── STEP EDITING ──────────────────────────────────────────────────────────────
+function editStep(id) {
+  var card = document.getElementById('card-' + id);
+  var isEditing = card.classList.contains('editing');
+  document.querySelectorAll('.step-card.editing').forEach(function(c) { c.classList.remove('editing'); });
+  if (!isEditing) {
+    card.classList.add('editing');
+    var input = document.getElementById('input-' + id);
+    if (input) { input.focus(); input.select(); }
+  }
+}
+function cancelEdit(id) {
+  var card = document.getElementById('card-' + id);
+  if (card) card.classList.remove('editing');
+}
+function saveEdit(id) {
+  var input = document.getElementById('input-' + id);
+  if (!input) return;
+  var val = input.value.trim();
+  if (!val) return;
+  var step = steps.find(function(s) { return s.id === id; });
+  if (step) {
+    var parts = val.split(/\.(?:\s+|$)/);
+    step.title = parts[0].trim();
+    step.description = parts.slice(1).join('. ').trim() || step.description;
+  }
+  showToast('ok', '✓ Step updated');
+  render();
+  renderStepToolPills();
+}
+function deleteStep(id) {
+  steps = steps.filter(function(s) { return s.id !== id; });
+  showToast('ok', 'Step removed');
+  render();
+}
+function addStep() {
+  var newStep = { id: 's' + (++uid), title: 'New step', type: 'custom', description: 'Describe what this step should do.' };
+  steps.push(newStep);
+  render();
+  setTimeout(function() { editStep(newStep.id); }, 50);
+}
+function applyGlobal() {
+  var val = document.getElementById('global-input').value.trim();
+  if (!val) return;
+  showToast('ok', '⚡ Applied to all steps');
+  document.getElementById('global-input').value = '';
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────────────────────
+function onDragStart(e, i) {
+  dragSrcIdx = i;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(function() { document.querySelectorAll('.step-card')[i].classList.add('dragging'); }, 0);
+}
+function onDragOver(e, i) {
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.step-card').forEach(function(c) { c.style.outline = ''; });
+  document.querySelectorAll('.step-card')[i].style.outline = '1px dashed rgba(99,223,78,0.4)';
+}
+function onDrop(e, i) {
+  e.preventDefault();
+  document.querySelectorAll('.step-card').forEach(function(c) { c.style.outline = ''; });
+  if (dragSrcIdx === null || dragSrcIdx === i) return;
+  var moved = steps.splice(dragSrcIdx, 1)[0];
+  steps.splice(i, 0, moved);
+  render(); renderStepToolPills();
+  showToast('ok', 'Step reordered');
+}
+function onDragEnd() {
+  dragSrcIdx = null;
+  document.querySelectorAll('.step-card').forEach(function(c) { c.classList.remove('dragging'); c.style.outline = ''; });
+}
+
+// ── CTA / BACK HANDLERS ───────────────────────────────────────────────────────
+function handleCTA() {
+  if (currentPhase === 'complete') {
+    window.location.href = 'screen4-library.html';
+  } else {
+    startWeaving();
+  }
+}
+
+function handleBack() {
+  if (currentPhase === 'execute' || currentPhase === 'complete') {
+    if (activeWS) { try { activeWS.close(); } catch(e) {} activeWS = null; }
+    resetToReview();
+  } else {
+    window.location.href = 'screen1-build.html';
+  }
+}
+
+function resetToReview() {
+  currentPhase = 'review';
+  document.getElementById('phase-review').style.display = 'block';
+  document.getElementById('phase-execute').style.display = 'none';
+  document.getElementById('complete-banner').classList.remove('show');
+  document.getElementById('gen-panel').style.display = 'none';
+  document.getElementById('exec-error').style.display = 'none';
+  document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('progress-done').textContent = '0';
+  document.getElementById('trace-list').innerHTML = '';
+  document.getElementById('nav-step-2').className = 'nav-step active';
+  document.getElementById('nav-step-3').className = 'nav-step';
+  document.getElementById('cta-dot').className = 'pulse-dot';
+  document.getElementById('cta-status-text').textContent = 'Review steps, then proceed';
+  document.getElementById('cta-label').textContent = 'Looks good, start weaving';
+  document.getElementById('cta-btn').disabled = false;
+  document.getElementById('btn-back').style.display = 'flex';
+}
+
+// ── START WEAVING ─────────────────────────────────────────────────────────────
+async function startWeaving() {
+  if (!steps.length) { showToast('err', 'Add at least one step first'); return; }
+
+  var nameInput = document.getElementById('workflow-name-input');
+  var wfName = nameInput ? nameInput.value.trim() : '';
+  if (!wfName) {
+    if (nameInput) { nameInput.classList.add('error'); nameInput.focus(); }
+    showToast('err', 'Please name your workflow before weaving');
+    return;
+  }
+  if (nameInput) nameInput.classList.remove('error');
+  localStorage.setItem('weave_workflow_name', wfName);
+  localStorage.setItem('weave_steps', JSON.stringify(steps));
+
+  document.getElementById('cta-btn').disabled = true;
+
+  // Save steps + get final matches (with workflow name)
+  try {
+    var resp = await fetch(BASE + '/api/steps/match-tools', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow_id: workflowId, steps: steps, workflow_name: wfName })
+    });
+    var data = await resp.json();
+    toolMatches = {};
+    (data.matches || []).forEach(function(m) { toolMatches[m.step_id] = m; });
+  } catch(e) { /* proceed with whatever we have */ }
+
+  // Build list of generated tools data for post-execution panel
+  generatedToolsData = steps
+    .filter(function(s) { return toolMatches[s.id] && toolMatches[s.id].type === 'generated'; })
+    .map(function(s) {
+      var m = toolMatches[s.id];
+      return {
+        match: m,
+        step: s,
+        inputs: (s.input_fields || '').split(',').map(function(x) { return x.trim(); }).filter(Boolean),
+        outputs: (s.output_fields || '').split(',').map(function(x) { return x.trim(); }).filter(Boolean)
+      };
+    });
+
+  showExecutePhase();
+  openWebSocket();
+}
+
+// ── EXECUTION PHASE ───────────────────────────────────────────────────────────
+function showExecutePhase() {
+  currentPhase = 'execute';
+  document.getElementById('phase-review').style.display = 'none';
+  document.getElementById('phase-execute').style.display = 'block';
+  document.getElementById('nav-step-2').className = 'nav-step done';
+  document.getElementById('nav-step-3').className = 'nav-step active';
+  document.getElementById('cta-btn').style.display = 'none';
+  document.getElementById('cta-dot').className = 'pulse-dot blue';
+  document.getElementById('cta-status-text').textContent = 'Executing workflow…';
+
+  document.getElementById('progress-total').textContent = steps.length;
+  renderTraceCards();
+  execStartTime = Date.now();
+}
+
+function renderTraceCards() {
+  var list = document.getElementById('trace-list');
+  list.innerHTML = steps.map(function(s, i) {
+    var m = toolMatches[s.id] || {};
+    var toolType = m.type || 'custom';
+    var toolName = m.tool || s.tool || 'unknown';
+    var isGen = toolType === 'generated';
+
+    return '<div class="trace-card pending" id="tc-' + i + '">' +
+      '<div class="trace-main">' +
+        '<div class="trace-status pending" id="ts-' + i + '"><div class="status-dot"></div></div>' +
+        '<div class="trace-content">' +
+          '<div class="trace-title">' + esc(s.title) + '</div>' +
+          '<div class="trace-meta">' +
+            '<div class="trace-tool">' +
+              '<span class="tool-dot ' + toolType + '"></span>' +
+              esc(toolName) +
+              (isGen ? '&nbsp;<span class="trace-gen-badge">Generating</span>' : '') +
+            '</div>' +
+            '<div class="trace-duration" id="td-' + i + '"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="trace-log" id="tl-' + i + '"></div>' +
+    '</div>';
+  }).join('');
+}
+
+function openWebSocket() {
+  var connected = false;
+  var errored = false;
+
+  try {
+    var wsUrl = 'ws://localhost:3000/ws/execute/' + workflowId;
+    var conn = new WebSocket(wsUrl);
+    activeWS = conn;
+
+    conn.onopen = function() { connected = true; };
+
+    conn.onmessage = function(e) {
+      try { handleWSEvent(JSON.parse(e.data)); } catch(ex) {}
+    };
+
+    conn.onerror = function() {
+      if (!connected && !errored) {
+        errored = true;
+        showExecError('Could not connect to the backend server. Make sure it is running on port 3000.');
+      }
+    };
+
+    conn.onclose = function() {
+      if (!connected && !errored) {
+        errored = true;
+        showExecError('WebSocket connection closed before execution started. Is the backend running?');
+      }
+    };
+
+    setTimeout(function() {
+      if (!connected && !errored) {
+        errored = true;
+        conn.close();
+        showExecError('Connection timed out after 5 seconds. Make sure the backend is running on port 3000.');
+      }
+    }, 5000);
+
+  } catch(e) {
+    showExecError('Failed to open WebSocket: ' + e.message);
+  }
+}
+
+function retryExec() {
+  document.getElementById('exec-error').style.display = 'none';
+  document.getElementById('progress-wrap').style.display = 'flex';
+  document.getElementById('trace-list').style.display = 'flex';
+  renderTraceCards();
+  execStartTime = Date.now();
+  openWebSocket();
+}
+
+// ── WS EVENT HANDLERS ─────────────────────────────────────────────────────────
+function handleWSEvent(evt) {
+  if (evt.type === 'step_start') {
+    setStepRunning(evt.step_index);
+  } else if (evt.type === 'step_log') {
+    appendLog(evt.step_index, evt.level, evt.message);
+  } else if (evt.type === 'step_done') {
+    setStepDone(evt.step_index, evt.duration_ms);
+  } else if (evt.type === 'step_error') {
+    setStepError(evt.step_index, evt.error);
+  } else if (evt.type === 'workflow_done') {
+    onWorkflowDone(evt);
+  } else if (evt.type === 'error') {
+    showExecError(evt.message || 'Unknown server error');
+  }
+}
+
+function setStepRunning(idx) {
+  var card = document.getElementById('tc-' + idx);
+  var status = document.getElementById('ts-' + idx);
+  var dur = document.getElementById('td-' + idx);
+  if (!card) return;
+  card.className = 'trace-card running';
+  status.className = 'trace-status running';
+  status.innerHTML = '<div class="status-spinner"></div>';
+  if (dur) dur.textContent = 'running…';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function setStepDone(idx, ms) {
+  var card = document.getElementById('tc-' + idx);
+  var status = document.getElementById('ts-' + idx);
+  var dur = document.getElementById('td-' + idx);
+  if (!card) return;
+  card.className = 'trace-card done';
+  status.className = 'trace-status done';
+  status.innerHTML = '<span class="status-check">✓</span>';
+  if (dur) { dur.textContent = (ms / 1000).toFixed(1) + 's'; dur.className = 'trace-duration done'; }
+  var done = document.querySelectorAll('.trace-card.done').length;
+  document.getElementById('progress-bar').style.width = Math.round((done / steps.length) * 100) + '%';
+  document.getElementById('progress-done').textContent = done;
+}
+
+function setStepError(idx, msg) {
+  var card = document.getElementById('tc-' + idx);
+  var status = document.getElementById('ts-' + idx);
+  if (!card) return;
+  card.className = 'trace-card error';
+  status.className = 'trace-status error';
+  status.innerHTML = '<span class="status-cross">✕</span>';
+  appendLog(idx, 'error', msg || 'Step failed');
+}
+
+function appendLog(idx, level, msg) {
+  var log = document.getElementById('tl-' + idx);
+  if (!log) return;
+  var ts = new Date().toISOString().slice(11, 23);
+  var line = document.createElement('div');
+  line.className = 'log-line ' + (level || 'info');
+  line.innerHTML = '<span class="log-ts">' + ts + '</span><span class="log-msg">' + esc(msg) + '</span>';
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function showExecError(msg) {
+  document.getElementById('exec-error-msg').textContent = msg;
+  document.getElementById('exec-error').style.display = 'flex';
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('trace-list').style.display = 'none';
+  document.getElementById('cta-dot').className = 'pulse-dot';
+  document.getElementById('cta-status-text').textContent = 'Execution failed';
+  document.getElementById('btn-back').style.display = 'flex';
+}
+
+function onWorkflowDone(evt) {
+  var secs = ((Date.now() - execStartTime) / 1000).toFixed(1);
+  currentPhase = 'complete';
+
+  document.getElementById('exec-eyebrow').textContent = 'Execution Complete';
+  document.getElementById('exec-title').textContent = 'Workflow woven';
+  document.getElementById('exec-sub').textContent = 'All ' + steps.length + ' steps completed in ' + secs + 's.';
+
+  var banner = document.getElementById('complete-banner');
+  banner.querySelector('.complete-sub').textContent = 'All ' + steps.length + ' steps completed in ' + secs + 's.';
+  banner.classList.add('show');
+
+  document.getElementById('cta-dot').className = 'pulse-dot green';
+  document.getElementById('cta-status-text').textContent = 'Workflow complete — ' + secs + 's total';
+  document.getElementById('cta-btn').style.display = 'flex';
+  document.getElementById('cta-btn').disabled = false;
+  document.getElementById('cta-label').textContent = 'Continue to Library';
+  document.getElementById('btn-back').style.display = 'flex';
+
+  if (generatedToolsData.length > 0) {
+    renderGeneratedToolsPanel();
+  }
+}
+
+// ── GENERATED TOOLS PANEL ─────────────────────────────────────────────────────
+function renderGeneratedToolsPanel() {
+  var panel = document.getElementById('gen-panel');
+  var list  = document.getElementById('gen-tools-list');
+
+  list.innerHTML = generatedToolsData.map(function(data, i) {
+    var m = data.match;
+    var s = data.step;
+    var toolName   = m.tool || '';
+    var systemPart = toolName.split('.')[0] || 'weave';
+    var desc       = s.description || '';
+    var stepLabel  = 'Step ' + (steps.indexOf(s) + 1) + ': ' + s.title;
+
+    var catOptions = ['logic', 'action', 'query', 'notify'].map(function(c) {
+      var sel = (s.type === c || (c === 'logic' && !['action','query','notify'].includes(s.type))) ? ' selected' : '';
+      return '<option value="' + c + '"' + sel + '>' + c.charAt(0).toUpperCase() + c.slice(1) + '</option>';
+    }).join('');
+
+    var inputTags  = data.inputs.map(function(x) { return '<span class="io-tag">'        + esc(x) + '</span>'; }).join('');
+    var outputTags = data.outputs.map(function(x){ return '<span class="io-tag output">' + esc(x) + '</span>'; }).join('');
+
+    var ioHtml = (data.inputs.length || data.outputs.length) ? (
+      '<div class="gen-io-row">' +
+        (data.inputs.length  ? '<div class="gen-io"><span class="gen-io-label">Inputs</span><div class="gen-io-tags">'  + inputTags  + '</div></div>' : '') +
+        (data.outputs.length ? '<div class="gen-io"><span class="gen-io-label">Outputs</span><div class="gen-io-tags">' + outputTags + '</div></div>' : '') +
+      '</div>'
+    ) : '';
+
+    return (
+      '<div class="gen-tool-card" id="gen-card-' + i + '">' +
+
+        // ── Header
+        '<div class="gen-card-header">' +
+          '<div class="gen-card-badge"><span class="pill-dot generated"></span>Generated tool</div>' +
+          '<div class="gen-card-step">' + esc(stepLabel) + '</div>' +
+        '</div>' +
+
+        // ── Tab buttons
+        '<div class="gen-tabs">' +
+          '<button class="gen-tab active" id="gen-tab-' + i + '-describe" onclick="switchGenTab(' + i + ',\'describe\')">✦ Describe It</button>' +
+          '<button class="gen-tab"        id="gen-tab-' + i + '-manual"   onclick="switchGenTab(' + i + ',\'manual\')">Manual Entry</button>' +
+          '<button class="gen-tab"        id="gen-tab-' + i + '-script"   onclick="switchGenTab(' + i + ',\'script\')">Script &amp; Config</button>' +
+        '</div>' +
+
+        // ── Tab panels wrapper
+        '<div class="gen-tab-panels">' +
+
+          // Panel: Describe It
+          '<div class="gen-tab-panel active" id="gen-panel-' + i + '-describe">' +
+            '<div class="gen-field-row">' +
+              '<div class="gen-field-group">' +
+                '<label class="gen-label">Tool Name</label>' +
+                '<input class="gen-input" id="gen-name-' + i + '" value="' + esc(toolName) + '" placeholder="e.g. weave.my_tool" />' +
+              '</div>' +
+              '<div class="gen-field-group">' +
+                '<label class="gen-label">System</label>' +
+                '<input class="gen-input" id="gen-system-' + i + '" value="' + esc(systemPart) + '" />' +
+              '</div>' +
+            '</div>' +
+            '<div class="gen-field-row">' +
+              '<div class="gen-field-group">' +
+                '<label class="gen-label">Category</label>' +
+                '<select class="gen-select" id="gen-cat-' + i + '">' + catOptions + '</select>' +
+              '</div>' +
+              '<div class="gen-field-group">' +
+                '<label class="gen-label">Integration Type</label>' +
+                '<select class="gen-select" id="gen-itype-' + i + '">' +
+                  '<option value="REST API" selected>REST API</option>' +
+                  '<option value="XML">XML</option>' +
+                  '<option value="LLM API">LLM API</option>' +
+                  '<option value="MCP">MCP</option>' +
+                  '<option value="Static Data">Static Data</option>' +
+                  '<option value="Generated">Generated</option>' +
+                '</select>' +
+              '</div>' +
+            '</div>' +
+            '<div class="gen-field-group">' +
+              '<label class="gen-label">Describe what this tool should do</label>' +
+              '<textarea class="gen-textarea" id="gen-nlp-' + i + '" rows="4" placeholder="Describe what this tool should do in plain English — Jacquard Loom will generate the schema…">' + esc(desc) + '</textarea>' +
+            '</div>' +
+            '<button class="btn-gen-schema" id="gen-gen-btn-' + i + '" onclick="generateSchema(' + i + ')">' +
+              '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="6.5,1 8.5,5 12.5,5.5 9.5,8.5 10.5,12.5 6.5,10.5 2.5,12.5 3.5,8.5 0.5,5.5 4.5,5"/></svg>' +
+              'Generate Schema' +
+            '</button>' +
+            '<div class="gen-ai-notice" id="gen-ai-notice-' + i + '">' +
+              '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="2,7 5,10 11,3"/></svg>' +
+              'Schema generated by Jacquard Loom — review before saving' +
+            '</div>' +
+          '</div>' +
+
+          // Panel: Manual Entry
+          '<div class="gen-tab-panel" id="gen-panel-' + i + '-manual">' +
+            '<div class="gen-field-group">' +
+              '<label class="gen-label">Description</label>' +
+              '<textarea class="gen-textarea" id="gen-desc-' + i + '" rows="3">' + esc(desc) + '</textarea>' +
+            '</div>' +
+            '<div class="gen-field-group">' +
+              '<label class="gen-label">API Endpoint</label>' +
+              '<input class="gen-input" id="gen-endpoint-' + i + '" placeholder="/api/system/v1/tool_name" />' +
+            '</div>' +
+            ioHtml +
+          '</div>' +
+
+          // Panel: Script & Config
+          '<div class="gen-tab-panel" id="gen-panel-' + i + '-script">' +
+            '<div class="gen-field-row">' +
+              '<div class="gen-field-group">' +
+                '<label class="gen-label">Auth Type</label>' +
+                '<select class="gen-select" id="gen-auth-type-' + i + '">' +
+                  '<option value="none" selected>None</option>' +
+                  '<option value="api_key">API Key</option>' +
+                  '<option value="bearer_token">Bearer Token</option>' +
+                '</select>' +
+              '</div>' +
+              '<div class="gen-field-group">' +
+                '<label class="gen-label">Auth Key Name</label>' +
+                '<input class="gen-input" id="gen-auth-key-' + i + '" placeholder="e.g. WEAVE_API_KEY" />' +
+              '</div>' +
+            '</div>' +
+            '<div class="gen-field-group">' +
+              '<label class="gen-label">Execution Script (Python)</label>' +
+              '<textarea class="gen-textarea gen-script-area" id="gen-script-' + i + '" rows="12" placeholder="async def execute(inputs: dict, config: dict) -> dict:&#10;    pass"></textarea>' +
+            '</div>' +
+          '</div>' +
+
+        '</div>' + // /gen-tab-panels
+
+        // ── Footer
+        '<div class="gen-card-footer">' +
+          '<div class="gen-card-status" id="gen-status-' + i + '"></div>' +
+          '<button class="btn-add-repo" id="gen-add-btn-' + i + '" onclick="addToRepository(' + i + ')">Add to Repository</button>' +
+        '</div>' +
+
+      '</div>'
+    );
+  }).join('');
+
+  panel.style.display = 'block';
+  setTimeout(function() { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 200);
+}
+
+function switchGenTab(cardIdx, tab) {
+  ['describe', 'manual', 'script'].forEach(function(t) {
+    var btn   = document.getElementById('gen-tab-'   + cardIdx + '-' + t);
+    var panel = document.getElementById('gen-panel-' + cardIdx + '-' + t);
+    if (btn)   btn.classList.toggle('active', t === tab);
+    if (panel) panel.classList.toggle('active', t === tab);
+  });
+}
+
+async function generateSchema(cardIdx) {
+  var name   = document.getElementById('gen-name-'   + cardIdx).value.trim();
+  var system = document.getElementById('gen-system-' + cardIdx).value.trim() || 'weave';
+  var cat    = document.getElementById('gen-cat-'    + cardIdx).value;
+  var nlp    = document.getElementById('gen-nlp-'    + cardIdx).value.trim();
+
+  if (!name && !nlp) {
+    showToast('err', 'Enter a tool name or description first');
+    return;
+  }
+
+  var btn = document.getElementById('gen-gen-btn-' + cardIdx);
+  btn.disabled = true;
+  btn.innerHTML = '<div class="res-spinner" style="border-top-color:var(--wasabi-green)"></div> Generating…';
+
+  try {
+    var resp = await fetch(BASE + '/api/tools/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name || nlp.split(' ').slice(0,3).join('_'), description: nlp, system: system, category: cat })
+    });
+    if (!resp.ok) throw new Error('Server error ' + resp.status);
+    var data = await resp.json();
+
+    // Fill Manual Entry fields
+    var descEl     = document.getElementById('gen-desc-'      + cardIdx);
+    var endpointEl = document.getElementById('gen-endpoint-'  + cardIdx);
+    var itypeEl    = document.getElementById('gen-itype-'     + cardIdx);
+    var authTypeEl = document.getElementById('gen-auth-type-' + cardIdx);
+    var authKeyEl  = document.getElementById('gen-auth-key-'  + cardIdx);
+    var scriptEl   = document.getElementById('gen-script-'    + cardIdx);
+
+    if (descEl     && data.description)      descEl.value     = data.description;
+    if (endpointEl && data.endpoint)         endpointEl.value = data.endpoint;
+    if (itypeEl    && data.integration_type) itypeEl.value    = data.integration_type;
+    if (authTypeEl && data.auth_type)        authTypeEl.value = data.auth_type;
+    if (authKeyEl  && data.auth_key_name)    authKeyEl.value  = data.auth_key_name;
+    if (scriptEl   && data.script_template)  scriptEl.value   = data.script_template;
+
+    document.getElementById('gen-ai-notice-' + cardIdx).classList.add('show');
+    switchGenTab(cardIdx, 'manual');
+    showToast('ok', '✓ Schema generated — review in Manual Entry');
+
+  } catch(e) {
+    showToast('err', 'Generation failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="6.5,1 8.5,5 12.5,5.5 9.5,8.5 10.5,12.5 6.5,10.5 2.5,12.5 3.5,8.5 0.5,5.5 4.5,5"/></svg> Generate Schema';
+  }
+}
+
+async function addToRepository(idx) {
+  var btn    = document.getElementById('gen-add-btn-' + idx);
+  var status = document.getElementById('gen-status-'  + idx);
+  var data   = generatedToolsData[idx];
+
+  // Read from all tabs (they're all in DOM regardless of active tab)
+  var name     = document.getElementById('gen-name-'      + idx).value.trim();
+  var system   = document.getElementById('gen-system-'    + idx).value.trim() || 'weave';
+  var category = document.getElementById('gen-cat-'       + idx).value;
+  var itype    = document.getElementById('gen-itype-'     + idx).value;
+  var desc     = document.getElementById('gen-desc-'      + idx).value.trim()
+              || document.getElementById('gen-nlp-'       + idx).value.trim();
+  var endpoint = document.getElementById('gen-endpoint-'  + idx).value.trim()
+              || '/api/' + system + '/v1/' + (name.split('.').pop() || 'tool');
+  var authType = document.getElementById('gen-auth-type-' + idx).value;
+  var authKey  = document.getElementById('gen-auth-key-'  + idx).value.trim();
+  var script   = document.getElementById('gen-script-'    + idx).value.trim();
+
+  if (!name) {
+    status.textContent = 'Tool name is required';
+    status.className = 'gen-card-status err';
+    switchGenTab(idx, 'describe');
+    document.getElementById('gen-name-' + idx).focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Adding…';
+  status.textContent = '';
+
+  try {
+    var payload = {
+      name: name, system: system, category: category,
+      description: desc, inputs: data.inputs, outputs: data.outputs,
+      endpoint: endpoint, enabled: true,
+      integration_type: itype || undefined,
+      auth_type:    authType !== 'none' ? authType : undefined,
+      auth_key_name: authKey  || undefined,
+      script:        script   || undefined,
+    };
+
+    var resp = await fetch(BASE + '/api/tools', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (resp.status === 409) {
+      status.innerHTML = 'A tool with this name already exists in the repository';
+      status.className = 'gen-card-status warn';
+      btn.textContent = 'Already exists';
+      return;
+    }
+    if (!resp.ok) throw new Error('Server returned ' + resp.status);
+
+    document.getElementById('gen-card-' + idx).classList.add('added');
+    status.innerHTML = '✓ Added to repository';
+    status.className = 'gen-card-status ok';
+    btn.style.display = 'none';
+    showToast('ok', '✓ ' + name + ' added to repository');
+
+  } catch(e) {
+    status.textContent = 'Failed: ' + e.message;
+    status.className = 'gen-card-status err';
+    btn.disabled = false;
+    btn.textContent = 'Add to Repository';
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+var toastTimer = null;
+function showToast(type, msg) {
+  var t = document.getElementById('toast');
+  t.className = 'toast show ' + type;
+  document.getElementById('toast-msg').textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { t.className = 'toast'; }, 2400);
+}
+
+// ── UTIL ──────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── PERSONA SWITCHER ──────────────────────────────────────────────────────────
+function togglePersonaMenu(e) {
+  e.stopPropagation();
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.toggle('open');
+}
+document.addEventListener('click', function() {
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.remove('open');
+});
+
+init();
+</script>
+</body>
+</html>

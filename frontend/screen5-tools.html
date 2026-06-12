@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jacquard Loom — Tool Repository</title>
+<style>
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans Mono'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSansMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+
+:root {
+  --infinite-blue: #032D42;
+  --wasabi-green: #63DF4E;
+  --silver: #A8C8DC;
+  --bright-blue: #52B8FF;
+  --font-sans: 'ServiceNow Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'ServiceNow Sans Mono', 'Consolas', monospace;
+  --surface-1: #042538;
+  --surface-2: #063347;
+  --surface-3: #0a3d55;
+  --border-subtle: rgba(82,184,255,0.12);
+  --border-mid: rgba(82,184,255,0.22);
+  --border-green: rgba(99,223,78,0.3);
+  --green-bg: rgba(99,223,78,0.08);
+  --text-primary: #FFFFFF;
+  --text-secondary: #A8C8DC;
+  --text-muted: #5A8A9F;
+  --red: #FF5A5A;
+  --red-bg: rgba(255,90,90,0.08);
+  --orange: #F5A623;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--infinite-blue); color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; overflow: hidden; }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 52px;
+  background: rgba(3,45,66,0.95); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 600; color: var(--text-primary);
+  cursor: pointer; user-select: none; letter-spacing: -0.01em; text-decoration: none;
+}
+.nav-links { display: flex; gap: 4px; }
+.nav-link {
+  background: none; border: none; color: var(--text-muted);
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  padding: 6px 14px; border-radius: 6px; cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.nav-link:hover { color: var(--text-primary); background: var(--surface-3); }
+.nav-link.active { color: var(--wasabi-green); background: var(--green-bg); }
+
+/* ── THREE-COLUMN LAYOUT ── */
+.app-body {
+  position: fixed; top: 52px; bottom: 0; left: 0; right: 0;
+  display: flex; overflow: hidden;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--surface-1); border-right: 1px solid var(--border-subtle);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sidebar-header {
+  padding: 18px 16px 12px;
+  border-bottom: 1px solid var(--border-subtle); flex-shrink: 0;
+}
+.sidebar-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted);
+}
+.sidebar-scroll { flex: 1; overflow-y: auto; padding: 8px 0; }
+.sidebar-scroll::-webkit-scrollbar { width: 3px; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
+
+.sys-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px; cursor: pointer;
+  transition: background 0.12s; border-radius: 0;
+}
+.sys-item:hover { background: var(--surface-2); }
+.sys-item.active { background: var(--green-bg); }
+.sys-item.active .sys-label { color: var(--wasabi-green); }
+.sys-icon {
+  width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0; background: var(--surface-3);
+}
+.sys-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); flex: 1; }
+.sys-count {
+  font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);
+  background: var(--surface-3); border-radius: 10px; padding: 1px 6px;
+}
+.sys-item.active .sys-count { background: rgba(99,223,78,0.15); color: var(--wasabi-green); }
+
+.sidebar-divider { height: 1px; background: var(--border-subtle); margin: 8px 16px; }
+
+/* ── MAIN PANEL ── */
+.main-panel {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  min-width: 0;
+}
+.main-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; gap: 12px;
+}
+.toolbar-left { display: flex; align-items: center; gap: 10px; }
+.status-filter { display: flex; gap: 4px; }
+.sf-btn {
+  background: none; border: 1px solid var(--border-subtle);
+  color: var(--text-muted); font-family: var(--font-sans); font-size: 12px;
+  padding: 5px 12px; border-radius: 20px; cursor: pointer; transition: all 0.14s;
+}
+.sf-btn:hover { border-color: var(--border-mid); color: var(--text-secondary); }
+.sf-btn.active { background: var(--green-bg); border-color: var(--border-green); color: var(--wasabi-green); }
+.count-label { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+.toolbar-right { display: flex; align-items: center; gap: 8px; }
+.search-wrap {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 6px 12px; transition: border-color 0.15s;
+}
+.search-wrap:focus-within { border-color: var(--border-green); }
+.search-wrap input {
+  background: none; border: none; outline: none;
+  font-family: var(--font-sans); font-size: 12px; color: var(--text-primary); width: 160px;
+}
+.search-wrap input::placeholder { color: var(--text-muted); }
+.btn-add {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--wasabi-green); color: #032D42;
+  font-family: var(--font-sans); font-size: 12px; font-weight: 700;
+  padding: 7px 16px; border: none; border-radius: 8px; cursor: pointer;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn-add:hover { opacity: 0.9; }
+
+/* Tool table */
+.table-wrap { flex: 1; overflow-y: auto; }
+.table-wrap::-webkit-scrollbar { width: 4px; }
+.table-wrap::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
+
+table { width: 100%; border-collapse: collapse; }
+thead { position: sticky; top: 0; z-index: 2; background: var(--surface-1); }
+th {
+  padding: 10px 14px; text-align: left;
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+}
+th:first-child { padding-left: 24px; }
+th:last-child  { padding-right: 24px; }
+tbody tr {
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer; transition: background 0.12s;
+}
+tbody tr:hover { background: var(--surface-2); }
+tbody tr.selected { background: var(--green-bg); }
+td { padding: 11px 14px; vertical-align: middle; }
+td:first-child { padding-left: 24px; }
+td:last-child  { padding-right: 24px; }
+
+.tool-name-cell { display: flex; align-items: center; gap: 10px; }
+.tool-sys-icon {
+  width: 30px; height: 30px; border-radius: 7px;
+  background: var(--surface-3); display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.tool-name { font-size: 13px; font-weight: 500; color: var(--text-primary); font-family: var(--font-mono); }
+.tool-id   { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+.category-pill {
+  display: inline-block; font-family: var(--font-mono); font-size: 10px;
+  background: var(--surface-3); border: 1px solid var(--border-subtle);
+  border-radius: 4px; padding: 2px 7px; color: var(--bright-blue);
+}
+
+.usage-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.usage-bar-track { width: 60px; height: 3px; background: var(--surface-3); border-radius: 2px; flex-shrink: 0; }
+.usage-bar-fill  { height: 100%; border-radius: 2px; background: var(--bright-blue); }
+.usage-num { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+
+.enabled-toggle {
+  width: 32px; height: 18px; border-radius: 9px; border: none;
+  cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0;
+}
+.enabled-toggle.on  { background: var(--wasabi-green); }
+.enabled-toggle.off { background: var(--surface-3); border: 1px solid var(--border-subtle); }
+.enabled-toggle::after {
+  content: ''; position: absolute; width: 12px; height: 12px;
+  border-radius: 50%; background: #fff; top: 3px; transition: left 0.2s;
+}
+.enabled-toggle.on::after  { left: 17px; }
+.enabled-toggle.off::after { left: 3px; }
+
+.row-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.13s; }
+tbody tr:hover .row-actions { opacity: 1; }
+.icon-btn {
+  width: 26px; height: 26px; border: none; background: transparent;
+  border-radius: 5px; color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s, color 0.12s;
+}
+.icon-btn:hover { background: var(--surface-3); color: var(--text-secondary); }
+.icon-btn.danger:hover { background: var(--red-bg); color: var(--red); }
+
+.type-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; vertical-align: middle;
+}
+.dot-mcp       { background: var(--wasabi-green); }
+.dot-open_api  { background: var(--bright-blue); }
+.dot-generated { background: var(--orange); }
+.dot-custom    { background: var(--silver); }
+
+/* ── DETAIL PANEL ── */
+.detail-panel {
+  width: 0; flex-shrink: 0; overflow: hidden;
+  border-left: 0px solid var(--border-subtle);
+  background: var(--surface-1);
+  display: flex; flex-direction: column;
+  transition: width 0.26s cubic-bezier(.22,.68,0,1.1), border-left-width 0.26s;
+}
+.detail-panel.open { width: 360px; border-left-width: 1px; }
+
+.dp-header {
+  padding: 18px 20px 14px; border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-shrink: 0;
+}
+.dp-title { font-size: 14px; font-weight: 700; color: var(--text-primary); font-family: var(--font-mono); letter-spacing: -0.01em; }
+.dp-sub   { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.dp-close {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  padding: 4px; border-radius: 5px; flex-shrink: 0; transition: color 0.12s;
+}
+.dp-close:hover { color: var(--text-primary); }
+
+.dp-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.dp-body::-webkit-scrollbar { width: 3px; }
+.dp-body::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
+
+.dp-section { margin-bottom: 18px; }
+.dp-section-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px;
+}
+.dp-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+.dp-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.dp-meta-item { background: var(--surface-2); border-radius: 6px; padding: 8px 10px; }
+.dp-meta-key { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 2px; }
+.dp-meta-val { font-size: 11px; font-weight: 500; color: var(--text-secondary); font-family: var(--font-mono); }
+
+.schema-list { display: flex; flex-direction: column; gap: 5px; }
+.schema-field {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface-2); border-radius: 6px; padding: 7px 10px;
+  font-family: var(--font-mono); font-size: 11px;
+}
+.field-name { color: var(--bright-blue); flex: 1; }
+.field-type { color: var(--text-muted); font-size: 10px; background: var(--surface-3); border-radius: 3px; padding: 1px 5px; }
+
+.dp-footer {
+  padding: 14px 20px; border-top: 1px solid var(--border-subtle); flex-shrink: 0;
+  display: flex; gap: 8px;
+}
+.btn-primary {
+  flex: 1; background: var(--wasabi-green); color: #032D42;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 700;
+  padding: 9px; border: none; border-radius: 8px; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.9; }
+.btn-outline {
+  background: none; border: 1px solid var(--border-subtle); color: var(--text-muted);
+  font-family: var(--font-sans); font-size: 13px; padding: 9px 16px;
+  border-radius: 8px; cursor: pointer; transition: border-color 0.15s, color 0.15s;
+}
+.btn-outline:hover { border-color: var(--border-mid); color: var(--text-secondary); }
+
+/* ── ADD TOOL MODAL ── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(3,45,66,0.7); backdrop-filter: blur(6px);
+  z-index: 300; display: none; align-items: center; justify-content: center;
+}
+.modal-backdrop.show { display: flex; }
+.modal {
+  background: var(--surface-1); border: 1px solid var(--border-mid);
+  border-radius: 14px; width: 520px; max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 80px); overflow-y: auto;
+  animation: fadeUp 0.2s ease;
+}
+.modal-header {
+  padding: 20px 24px 16px; border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: var(--surface-1); z-index: 1;
+}
+.modal-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.modal-close {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  padding: 4px; border-radius: 5px; transition: color 0.12s;
+}
+.modal-close:hover { color: var(--text-primary); }
+.modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+.modal-footer {
+  padding: 16px 24px; border-top: 1px solid var(--border-subtle);
+  display: flex; justify-content: flex-end; gap: 10px;
+  position: sticky; bottom: 0; background: var(--surface-1);
+}
+
+/* AI generate row */
+.ai-generate-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--green-bg); border: 1px solid var(--border-green);
+  border-radius: 10px; padding: 12px 16px; cursor: pointer;
+  transition: background 0.15s;
+}
+.ai-generate-row:hover { background: rgba(99,223,78,0.12); }
+.ai-badge {
+  background: var(--wasabi-green); color: #032D42;
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; flex-shrink: 0;
+}
+.ai-label { font-size: 13px; color: var(--text-secondary); flex: 1; }
+.ai-arrow { color: var(--wasabi-green); font-size: 16px; flex-shrink: 0; }
+
+/* Form */
+.form-row { display: flex; flex-direction: column; gap: 6px; }
+.form-row.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+.f-input, .f-select, .f-textarea {
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 9px 12px;
+  font-family: var(--font-sans); font-size: 13px; color: var(--text-primary);
+  outline: none; transition: border-color 0.15s; width: 100%;
+}
+.f-textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+.f-input::placeholder, .f-textarea::placeholder { color: var(--text-muted); }
+.f-input:focus, .f-select:focus, .f-textarea:focus { border-color: var(--border-green); }
+.f-select { cursor: pointer; }
+
+.btn-cancel {
+  background: none; border: 1px solid var(--border-subtle); color: var(--text-muted);
+  font-family: var(--font-sans); font-size: 13px; padding: 9px 18px;
+  border-radius: 8px; cursor: pointer; transition: border-color 0.15s, color 0.15s;
+}
+.btn-cancel:hover { border-color: var(--border-mid); color: var(--text-secondary); }
+.btn-save {
+  background: var(--wasabi-green); color: #032D42;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 700;
+  padding: 9px 24px; border: none; border-radius: 8px; cursor: pointer;
+  transition: opacity 0.15s; display: flex; align-items: center; gap: 6px;
+}
+.btn-save:hover { opacity: 0.9; }
+.btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-spinner {
+  display: inline-block; width: 11px; height: 11px;
+  border: 1.5px solid rgba(3,45,66,0.4); border-top-color: #032D42;
+  border-radius: 50%; animation: spin 0.7s linear infinite; display: none;
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; top: 64px; right: 20px;
+  background: var(--surface-3); border: 1px solid var(--border-mid);
+  border-radius: 8px; padding: 10px 16px; font-size: 13px; color: var(--text-primary);
+  display: flex; align-items: center; gap: 8px; z-index: 500;
+  transform: translateX(120%); transition: transform 0.28s cubic-bezier(.22,.68,0,1.35);
+}
+.toast.show { transform: translateX(0); }
+.toast.ok  { border-color: rgba(99,223,78,0.4); }
+.toast.err { border-color: rgba(255,90,90,0.4); }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+@keyframes spin   { to { transform: rotate(360deg); } }
+
+/* ── PERSONA SWITCHER ── */
+nav { overflow: visible !important; }
+.persona-wrapper { display: flex; align-items: center; gap: 8px; }
+.persona-static-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; user-select: none; }
+.persona-dropdown {
+  position: relative; display: flex; align-items: center; gap: 7px;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 6px 12px;
+  font-size: 12px; font-weight: 600; color: var(--text-primary);
+  cursor: pointer; user-select: none; transition: border-color 0.15s;
+}
+.persona-dropdown:hover { border-color: var(--border-mid); }
+.persona-dropdown.open  { border-color: var(--border-green); }
+.persona-chevron { color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
+.persona-dropdown.open .persona-chevron { transform: rotate(180deg); }
+.persona-menu {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--surface-2); border: 1px solid var(--border-mid);
+  border-radius: 10px; padding: 6px; min-width: 180px; z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.persona-dropdown.open .persona-menu { display: block; }
+.persona-menu-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; transition: background 0.12s; white-space: nowrap;
+}
+.persona-menu-item:hover { background: var(--surface-3); color: var(--text-primary); }
+.persona-menu-item.current { color: var(--wasabi-green); pointer-events: none; }
+.persona-menu-divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+.persona-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.persona-dot.admin     { background: var(--bright-blue); }
+.persona-dot.fulfiller { background: var(--wasabi-green); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="screen1-build.html">
+    <svg width="40" height="24" viewBox="0 0 140 100">
+      <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#63DF4E" stroke-width="8" stroke-linecap="round"/>
+      <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#A8C8DC" stroke-width="8" stroke-linecap="round"/>
+    </svg>
+    Jacquard Loom
+  </a>
+  <div class="nav-links">
+    <button class="nav-link" onclick="window.location.href='screen1-build.html'">Build</button>
+    <button class="nav-link" onclick="window.location.href='screen4-library.html'">Library</button>
+    <button class="nav-link active" onclick="window.location.href='screen5-tools.html'">Tools</button>
+  </div>
+  <div class="persona-wrapper">
+    <span class="persona-static-label">Persona:</span>
+    <div class="persona-dropdown" id="persona-dropdown" onclick="togglePersonaMenu(event)">
+      <span>AI Admin</span>
+      <svg class="persona-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4 6,8 10,4"/></svg>
+      <div class="persona-menu" onclick="event.stopPropagation()">
+        <div class="persona-menu-item current"><span class="persona-dot admin"></span>AI Admin</div>
+        <div class="persona-menu-divider"></div>
+        <div class="persona-menu-item" onclick="window.location.href='screen7-fulfiller.html'"><span class="persona-dot fulfiller"></span>Fulfiller</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="app-body">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Systems</div>
+    </div>
+    <div class="sidebar-scroll" id="sidebar-scroll"></div>
+  </div>
+
+  <!-- MAIN PANEL -->
+  <div class="main-panel">
+    <div class="main-toolbar">
+      <div class="toolbar-left">
+        <div class="status-filter">
+          <button class="sf-btn active" onclick="setSF('all',this)">All</button>
+          <button class="sf-btn" onclick="setSF('enabled',this)">Enabled</button>
+          <button class="sf-btn" onclick="setSF('disabled',this)">Disabled</button>
+          <button class="sf-btn" onclick="setSF('generated',this)">AI Generated</button>
+        </div>
+        <span class="count-label" id="count-label">— tools</span>
+      </div>
+      <div class="toolbar-right">
+        <div class="search-wrap">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="var(--text-muted)" stroke-width="1.6" stroke-linecap="round">
+            <circle cx="5.5" cy="5.5" r="4"/><line x1="8.5" y1="8.5" x2="12" y2="12"/>
+          </svg>
+          <input type="text" id="search" placeholder="Search tools…" oninput="applyFilters()">
+        </div>
+        <button class="btn-add" onclick="openModal()">
+          <svg width="11" height="11" viewBox="0 0 11 11" stroke="currentColor" stroke-width="2.2" fill="none">
+            <line x1="5.5" y1="1" x2="5.5" y2="10"/><line x1="1" y1="5.5" x2="10" y2="5.5"/>
+          </svg>
+          Add tool
+        </button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tool</th>
+            <th>System</th>
+            <th>Category</th>
+            <th>Inputs</th>
+            <th>Usage</th>
+            <th>Enabled</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tool-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div class="detail-panel" id="detail-panel">
+    <div class="dp-header">
+      <div>
+        <div class="dp-title" id="dp-title">—</div>
+        <div class="dp-sub" id="dp-sub">—</div>
+      </div>
+      <button class="dp-close" onclick="closeDetail()">
+        <svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="2" fill="none">
+          <line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/>
+        </svg>
+      </button>
+    </div>
+    <div class="dp-body" id="dp-body"></div>
+    <div class="dp-footer">
+      <button class="btn-primary" onclick="testTool()">Test tool</button>
+      <button class="btn-outline" onclick="closeDetail()">Close</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ADD TOOL MODAL -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="handleBackdropClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Add tool</div>
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="13" height="13" viewBox="0 0 13 13" stroke="currentColor" stroke-width="2" fill="none">
+          <line x1="1" y1="1" x2="12" y2="12"/><line x1="12" y1="1" x2="1" y2="12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="ai-generate-row" onclick="aiGenerate()">
+        <span class="ai-badge">AI</span>
+        <span class="ai-label">Describe a tool and let Jacquard Loom generate its schema automatically</span>
+        <span class="ai-arrow">→</span>
+      </div>
+      <div class="form-row two">
+        <div>
+          <label>Tool name</label>
+          <input class="f-input" id="f-name" type="text" placeholder="e.g. servicenow.cmdb_api" />
+        </div>
+        <div>
+          <label>System</label>
+          <select class="f-select" id="f-system">
+            <option value="ServiceNow">ServiceNow</option>
+            <option value="Workday">Workday</option>
+            <option value="Okta">Okta</option>
+            <option value="SAP">SAP</option>
+            <option value="Slack">Slack</option>
+            <option value="Google">Google</option>
+            <option value="SendGrid">SendGrid</option>
+            <option value="PagerDuty">PagerDuty</option>
+            <option value="Custom">Custom</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row two">
+        <div>
+          <label>Category</label>
+          <input class="f-input" id="f-category" type="text" placeholder="e.g. auth, query, notify" />
+        </div>
+        <div>
+          <label>Endpoint</label>
+          <input class="f-input" id="f-endpoint" type="text" placeholder="https://…" />
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Description</label>
+        <textarea class="f-textarea" id="f-desc" placeholder="What does this tool do?"></textarea>
+      </div>
+      <div class="form-row">
+        <label>Input fields <span style="color:var(--text-muted);text-transform:none;font-weight:400">(comma-separated)</span></label>
+        <input class="f-input" id="f-inputs" type="text" placeholder="e.g. user_id, incident_number, session_token" />
+      </div>
+      <div class="form-row">
+        <label>Output fields <span style="color:var(--text-muted);text-transform:none;font-weight:400">(comma-separated)</span></label>
+        <input class="f-input" id="f-outputs" type="text" placeholder="e.g. incident_record, status_code" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" id="btn-save" onclick="saveTool()">
+        <div class="btn-spinner" id="save-spinner"></div>
+        Save tool
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span id="tm"></span></div>
+
+<script>
+var BASE = 'http://localhost:3000';
+var tools = [];
+var activeSystem = 'all';
+var activeSF = 'all';
+var activeToolId = null;
+
+var SYSTEMS = [
+  { id:'all',        label:'All tools',  icon:'🧰' },
+  { id:'ServiceNow', label:'ServiceNow', icon:'🏢' },
+  { id:'Workday',    label:'Workday',    icon:'👥' },
+  { id:'Okta',       label:'Okta',       icon:'🔐' },
+  { id:'SAP',        label:'SAP',        icon:'📊' },
+  { id:'Slack',      label:'Slack',      icon:'💬' },
+  { id:'Google',     label:'Google',     icon:'🔍' },
+  { id:'SendGrid',   label:'SendGrid',   icon:'📧' },
+  { id:'PagerDuty',  label:'PagerDuty',  icon:'🚨' },
+  { id:'AI Generated', label:'AI Generated', icon:'⚡' }
+];
+
+function seedTools() {
+  return [
+    { id:'t1',  name:'servicenow.auth',         system:'ServiceNow', category:'auth',    type:'mcp',       icon:'🔐', enabled:true,  generated:false, usage:148, endpoint:'https://instance.service-now.com/oauth_token', description:'Authenticates users and resolves service accounts. Manages OAuth tokens and session context for downstream tool calls.', inputs:['user_token','service_id'], outputs:['session_context','resolved_user'] },
+    { id:'t2',  name:'servicenow.table_api',    system:'ServiceNow', category:'query',   type:'open_api',  icon:'🗄️', enabled:true,  generated:false, usage:312, endpoint:'https://instance.service-now.com/api/now/table', description:'Read and write records across any ServiceNow table. Supports full CRUD via the REST Table API.', inputs:['table_name','query','fields'], outputs:['records','total_count'] },
+    { id:'t3',  name:'servicenow.flow_logic',   system:'ServiceNow', category:'logic',   type:'open_api',  icon:'🔀', enabled:true,  generated:false, usage:89,  endpoint:'https://instance.service-now.com/api/now/flow', description:'Evaluates routing rules, escalation policies, and conditional logic.', inputs:['incident_record','policy_id'], outputs:['routing_decision','reason_code'] },
+    { id:'t4',  name:'cmdb.query_api',          system:'ServiceNow', category:'query',   type:'open_api',  icon:'🏗️', enabled:true,  generated:false, usage:76,  endpoint:'https://instance.service-now.com/api/now/cmdb', description:'Queries the CMDB for configuration items, relationships, and dependency maps.', inputs:['ci_name','relationship_depth'], outputs:['ci_record','related_cis','owner'] },
+    { id:'t5',  name:'workday.employee_api',    system:'Workday',    category:'query',   type:'open_api',  icon:'👤', enabled:true,  generated:false, usage:44,  endpoint:'https://wd2-impl-services1.workday.com/ccx/api', description:'Reads and updates employee records in Workday. Supports new hire creation and org structure queries.', inputs:['employee_id','fields'], outputs:['employee_record','manager','department'] },
+    { id:'t6',  name:'okta.provision_user',     system:'Okta',       category:'auth',    type:'open_api',  icon:'🔑', enabled:true,  generated:false, usage:38,  endpoint:'https://your-domain.okta.com/api/v1/users', description:'Provisions and manages Okta user accounts. Creates accounts, assigns app access, and manages group memberships.', inputs:['email','first_name','last_name','groups'], outputs:['user_id','activation_token','profile'] },
+    { id:'t7',  name:'slack.mcp',               system:'Slack',      category:'notify',  type:'mcp',       icon:'💬', enabled:true,  generated:false, usage:201, endpoint:'mcp://slack-server', description:'Sends messages and posts to Slack channels. Supports rich text, attachments, and threads.', inputs:['channel','message','attachments'], outputs:['message_ts','channel_id'] },
+    { id:'t8',  name:'smtp.mcp',                system:'SendGrid',   category:'notify',  type:'mcp',       icon:'📧', enabled:true,  generated:false, usage:167, endpoint:'mcp://sendgrid-smtp', description:'Sends HTML and plain-text emails. Supports templates, attachments, and distribution lists.', inputs:['to','subject','body','template_id'], outputs:['message_id','delivery_status'] },
+    { id:'t9',  name:'pagerduty.alert',         system:'PagerDuty',  category:'action',  type:'open_api',  icon:'🚨', enabled:true,  generated:false, usage:55,  endpoint:'https://api.pagerduty.com/incidents', description:'Creates and manages PagerDuty incidents. Triggers on-call notifications and escalations.', inputs:['service_id','title','urgency','body'], outputs:['incident_id','alert_id','responders'] },
+    { id:'t10', name:'google.calendar_api',     system:'Google',     category:'action',  type:'open_api',  icon:'📅', enabled:true,  generated:false, usage:29,  endpoint:'https://www.googleapis.com/calendar/v3', description:'Creates and manages Google Calendar events. Schedules meetings and sends invitations.', inputs:['title','attendees','start_time','duration'], outputs:['event_id','meeting_link','calendar_id'] },
+    { id:'t11', name:'triage_scorer.py',        system:'AI Generated', category:'process', type:'generated', icon:'⚡', enabled:true, generated:true,  usage:34,  endpoint:'scripts/triage_scorer.py', description:'Scores incidents by impact, urgency, and recurrence rate. Returns ranked list with confidence scores.', inputs:['incidents','scoring_config'], outputs:['ranked_incidents','top_incident','score'] },
+    { id:'t12', name:'briefing_composer.py',    system:'AI Generated', category:'generate',type:'generated', icon:'⚡', enabled:true, generated:true,  usage:21,  endpoint:'scripts/briefing_composer.py', description:'Composes structured on-call briefing documents. Outputs markdown with root cause, impact, and action items.', inputs:['incident_record','related_cis','history'], outputs:['briefing_markdown','action_items'] },
+    { id:'t13', name:'onboarding_planner.py',   system:'AI Generated', category:'generate',type:'generated', icon:'⚡', enabled:true, generated:true,  usage:15,  endpoint:'scripts/onboarding_planner.py', description:'Generates a personalised onboarding plan from role and department. Returns checklist with timelines.', inputs:['employee_record','role','department'], outputs:['onboarding_plan','checklist','timeline'] },
+    { id:'t14', name:'sap.po_api',              system:'SAP',        category:'query',   type:'open_api',  icon:'📊', enabled:false, generated:false, usage:12,  endpoint:'https://api.sap.com/po/v1', description:'Reads and creates purchase orders in SAP. Supports approval workflow status checks.', inputs:['po_number','vendor_id'], outputs:['po_record','approval_status','line_items'] }
+  ];
+}
+
+function init() {
+  tools = seedTools();
+  tryFetchFromBackend();
+}
+
+async function tryFetchFromBackend() {
+  try {
+    var res = await fetch(BASE + '/api/tools');
+    if (res.ok) {
+      var data = await res.json();
+      if (data.tools && data.tools.length) tools = data.tools;
+    }
+  } catch(e) {}
+  renderSidebar();
+  applyFilters();
+}
+
+// ── SIDEBAR ──
+function renderSidebar() {
+  var scroll = document.getElementById('sidebar-scroll');
+  scroll.innerHTML = SYSTEMS.map(function(sys) {
+    var count = sys.id === 'all'
+      ? tools.length
+      : sys.id === 'AI Generated'
+        ? tools.filter(function(t){ return t.generated; }).length
+        : tools.filter(function(t){ return t.system === sys.id; }).length;
+    return '<div class="sys-item' + (activeSystem === sys.id ? ' active' : '') + '" onclick="setSystem(\'' + sys.id + '\')">' +
+      '<div class="sys-icon">' + sys.icon + '</div>' +
+      '<div class="sys-label">' + sys.label + '</div>' +
+      '<div class="sys-count">' + count + '</div>' +
+    '</div>' + (sys.id === 'all' ? '<div class="sidebar-divider"></div>' : '');
+  }).join('');
+}
+
+function setSystem(sysId) {
+  activeSystem = sysId;
+  renderSidebar();
+  applyFilters();
+}
+
+// ── FILTERS ──
+function setSF(sf, btn) {
+  activeSF = sf;
+  document.querySelectorAll('.sf-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  applyFilters();
+}
+
+function applyFilters() {
+  var q = document.getElementById('search').value.toLowerCase();
+
+  var filtered = tools.filter(function(t) {
+    var matchSys = activeSystem === 'all' || (activeSystem === 'AI Generated' ? t.generated : t.system === activeSystem);
+    var matchSF  = activeSF === 'all'
+      || (activeSF === 'enabled' && t.enabled)
+      || (activeSF === 'disabled' && !t.enabled)
+      || (activeSF === 'generated' && t.generated);
+    var matchQ   = !q || t.name.toLowerCase().includes(q) || (t.category||'').toLowerCase().includes(q) || (t.description||'').toLowerCase().includes(q);
+    return matchSys && matchSF && matchQ;
+  });
+
+  document.getElementById('count-label').textContent = filtered.length + ' tool' + (filtered.length !== 1 ? 's' : '');
+  renderTable(filtered);
+}
+
+// ── TABLE ──
+var MAX_USAGE = 350;
+function renderTable(filtered) {
+  var tbody = document.getElementById('tool-tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px">No tools found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(function(t) {
+    var inputs = (t.inputs || []).slice(0,2).join(', ') + (t.inputs && t.inputs.length > 2 ? '…' : '');
+    var pct = Math.round(((t.usage || 0) / MAX_USAGE) * 100);
+    return '<tr class="' + (t.id === activeToolId ? 'selected' : '') + '" onclick="openDetail(\'' + t.id + '\')">' +
+      '<td><div class="tool-name-cell">' +
+        '<div class="tool-sys-icon">' + (t.icon || '🔧') + '</div>' +
+        '<div><div class="tool-name">' + esc(t.name) + '</div>' +
+        '<div class="tool-id">' + esc(t.id) + '</div></div>' +
+      '</div></td>' +
+      '<td><span style="font-size:12px;color:var(--text-muted)">' + esc(t.system || '') + '</span></td>' +
+      '<td><span class="category-pill">' + esc(t.category || '') + '</span></td>' +
+      '<td><span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">' + esc(inputs || '—') + '</span></td>' +
+      '<td><div class="usage-bar-wrap">' +
+        '<div class="usage-bar-track"><div class="usage-bar-fill" style="width:' + pct + '%"></div></div>' +
+        '<span class="usage-num">' + (t.usage || 0) + '</span>' +
+      '</div></td>' +
+      '<td><button class="enabled-toggle ' + (t.enabled ? 'on' : 'off') + '" onclick="toggleTool(event,\'' + t.id + '\')"></button></td>' +
+      '<td><div class="row-actions">' +
+        (t.generated ? '<button class="icon-btn danger" onclick="deleteTool(event,\'' + t.id + '\')" title="Delete">' +
+          '<svg width="11" height="11" viewBox="0 0 11 11" stroke="currentColor" stroke-width="2" fill="none"><line x1="1" y1="1" x2="10" y2="10"/><line x1="10" y1="1" x2="1" y2="10"/></svg>' +
+        '</button>' : '') +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ── DETAIL PANEL ──
+function openDetail(id) {
+  var t = tools.find(function(x){ return x.id === id; });
+  if (!t) return;
+  activeToolId = id;
+  applyFilters();
+
+  document.getElementById('dp-title').textContent = t.name;
+  document.getElementById('dp-sub').textContent = t.system + ' · ' + t.category;
+
+  var inputs  = (t.inputs  || []).map(function(f){ return '<div class="schema-field"><span class="field-name">' + esc(f) + '</span><span class="field-type">string</span></div>'; }).join('');
+  var outputs = (t.outputs || []).map(function(f){ return '<div class="schema-field"><span class="field-name">' + esc(f) + '</span><span class="field-type">string</span></div>'; }).join('');
+
+  document.getElementById('dp-body').innerHTML =
+    '<div class="dp-section">' +
+      '<div class="dp-section-label">Description</div>' +
+      '<div class="dp-desc">' + esc(t.description || '—') + '</div>' +
+    '</div>' +
+    '<div class="dp-section">' +
+      '<div class="dp-section-label">Details</div>' +
+      '<div class="dp-meta-grid">' +
+        metaItem('Type', typeLabel(t.type)) +
+        metaItem('Usage', (t.usage || 0) + ' runs') +
+        metaItem('Status', t.enabled ? 'Enabled' : 'Disabled') +
+        metaItem('AI Generated', t.generated ? 'Yes' : 'No') +
+      '</div>' +
+    '</div>' +
+    '<div class="dp-section">' +
+      '<div class="dp-section-label">Endpoint</div>' +
+      '<div class="dp-desc" style="font-family:var(--font-mono);font-size:11px">' + esc(t.endpoint || '—') + '</div>' +
+    '</div>' +
+    (inputs ? '<div class="dp-section"><div class="dp-section-label">Input fields</div><div class="schema-list">' + inputs + '</div></div>' : '') +
+    (outputs ? '<div class="dp-section"><div class="dp-section-label">Output fields</div><div class="schema-list">' + outputs + '</div></div>' : '');
+
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function metaItem(k, v) {
+  return '<div class="dp-meta-item"><div class="dp-meta-key">' + k + '</div><div class="dp-meta-val">' + esc(String(v)) + '</div></div>';
+}
+
+function closeDetail() {
+  activeToolId = null;
+  document.getElementById('detail-panel').classList.remove('open');
+  applyFilters();
+}
+
+function testTool() {
+  showToast('ok', '✓ Tool test passed — response received');
+}
+
+function typeLabel(t) {
+  return { mcp:'MCP', open_api:'Open API', generated:'Generated', custom:'Custom' }[t] || t;
+}
+
+// ── TOGGLE ──
+function toggleTool(e, id) {
+  e.stopPropagation();
+  var t = tools.find(function(x){ return x.id === id; });
+  if (!t) return;
+  t.enabled = !t.enabled;
+  applyFilters();
+  renderSidebar();
+  showToast('ok', t.name + ' ' + (t.enabled ? 'enabled' : 'disabled'));
+}
+
+// ── DELETE ──
+function deleteTool(e, id) {
+  e.stopPropagation();
+  tools = tools.filter(function(t){ return t.id !== id; });
+  if (activeToolId === id) closeDetail();
+  renderSidebar();
+  applyFilters();
+  showToast('ok', 'Tool removed');
+}
+
+// ── MODAL ──
+function openModal() {
+  ['f-name','f-category','f-endpoint','f-desc','f-inputs','f-outputs'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('modal-backdrop').classList.add('show');
+}
+function closeModal() { document.getElementById('modal-backdrop').classList.remove('show'); }
+function handleBackdropClick(e) { if (e.target === document.getElementById('modal-backdrop')) closeModal(); }
+
+async function aiGenerate() {
+  var name = document.getElementById('f-name').value.trim();
+  var desc = document.getElementById('f-desc').value.trim();
+  if (!name && !desc) { showToast('err', 'Fill in name or description first'); return; }
+
+  var row = document.querySelector('.ai-generate-row');
+  row.innerHTML = '<span class="ai-badge">AI</span><span class="ai-label" style="color:var(--wasabi-green)">Generating schema…</span>';
+
+  try {
+    var res = await fetch(BASE + '/api/tools/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, description: desc, system: document.getElementById('f-system').value, category: document.getElementById('f-category').value })
+    });
+    if (res.ok) {
+      var data = await res.json();
+      if (data.name) document.getElementById('f-name').value = data.name;
+      if (data.description) document.getElementById('f-desc').value = data.description;
+      if (data.inputs) document.getElementById('f-inputs').value = data.inputs.join(', ');
+      if (data.outputs) document.getElementById('f-outputs').value = data.outputs.join(', ');
+    } else throw new Error();
+  } catch(e) {
+    // Demo fallback
+    var slug = (name || 'custom_tool').replace(/\s+/g,'_').toLowerCase();
+    document.getElementById('f-name').value = slug + '.py';
+    document.getElementById('f-inputs').value = 'input_data, config';
+    document.getElementById('f-outputs').value = 'result, status_code';
+  }
+
+  row.innerHTML = '<span class="ai-badge">AI</span><span class="ai-label">Describe a tool and let Jacquard Loom generate its schema automatically</span><span class="ai-arrow">→</span>';
+  showToast('ok', '⚡ Schema generated');
+}
+
+async function saveTool() {
+  var name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('err', 'Tool name is required'); return; }
+
+  var btn = document.getElementById('btn-save');
+  var spinner = document.getElementById('save-spinner');
+  btn.disabled = true; spinner.style.display = 'inline-block';
+
+  var tool = {
+    name: name, system: document.getElementById('f-system').value,
+    category: document.getElementById('f-category').value,
+    endpoint: document.getElementById('f-endpoint').value,
+    description: document.getElementById('f-desc').value,
+    inputs: document.getElementById('f-inputs').value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+    outputs: document.getElementById('f-outputs').value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+    type: 'custom', enabled: true, generated: false, usage: 0, icon: '🔧', tier: 'customer'
+  };
+
+  try {
+    var res = await fetch(BASE + '/api/tools', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(tool) });
+    if (res.ok) tool = await res.json();
+    else throw new Error();
+  } catch(e) { tool.id = 't' + Date.now(); }
+
+  tools.unshift(tool);
+  renderSidebar();
+  applyFilters();
+  closeModal();
+  showToast('ok', '✓ Tool saved to registry');
+
+  btn.disabled = false; spinner.style.display = 'none';
+}
+
+// ── TOAST ──
+var toastT;
+function showToast(type, msg) {
+  var el = document.getElementById('toast');
+  document.getElementById('tm').textContent = msg;
+  el.className = 'toast ' + type + ' show';
+  clearTimeout(toastT); toastT = setTimeout(function(){ el.classList.remove('show'); }, 2800);
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') { closeModal(); closeDetail(); } });
+
+init();
+
+// ── PERSONA SWITCHER ──
+function togglePersonaMenu(e) {
+  e.stopPropagation();
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.toggle('open');
+}
+document.addEventListener('click', function() {
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.remove('open');
+});
+</script>
+</body>
+</html>

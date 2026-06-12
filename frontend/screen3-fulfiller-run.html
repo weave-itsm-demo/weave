@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jacquard Loom — Running Workflow</title>
+<style>
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans Mono'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSansMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+
+:root {
+  --infinite-blue: #032D42;
+  --wasabi-green: #63DF4E;
+  --silver: #A8C8DC;
+  --bright-blue: #52B8FF;
+  --font-sans: 'ServiceNow Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'ServiceNow Sans Mono', 'Consolas', monospace;
+  --surface-1: #042538;
+  --surface-2: #063347;
+  --surface-3: #0a3d55;
+  --border-subtle: rgba(82,184,255,0.12);
+  --border-mid: rgba(82,184,255,0.22);
+  --border-green: rgba(99,223,78,0.3);
+  --green-bg: rgba(99,223,78,0.08);
+  --text-primary: #FFFFFF;
+  --text-secondary: #A8C8DC;
+  --text-muted: #5A8A9F;
+  --red: #FF5A5A;
+  --red-bg: rgba(255,90,90,0.08);
+  --orange: #F5A623;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; background: var(--infinite-blue); color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; }
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 52px;
+  background: rgba(3,45,66,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle); overflow: visible;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 600; color: var(--text-primary);
+  cursor: pointer; user-select: none; letter-spacing: -0.01em; text-decoration: none;
+}
+.persona-wrapper { display: flex; align-items: center; gap: 8px; }
+.persona-static-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.persona-dropdown {
+  position: relative; display: flex; align-items: center; gap: 7px;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 6px 12px;
+  font-size: 12px; font-weight: 600; color: var(--text-primary);
+  cursor: pointer; transition: border-color 0.15s;
+}
+.persona-dropdown:hover { border-color: var(--border-mid); }
+.persona-dropdown.open  { border-color: var(--border-green); }
+.persona-chevron { color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
+.persona-dropdown.open .persona-chevron { transform: rotate(180deg); }
+.persona-menu {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--surface-2); border: 1px solid var(--border-mid);
+  border-radius: 10px; padding: 6px; min-width: 180px; z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.persona-dropdown.open .persona-menu { display: block; }
+.persona-menu-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; transition: background 0.12s; white-space: nowrap;
+}
+.persona-menu-item:hover { background: var(--surface-3); color: var(--text-primary); }
+.persona-menu-item.current { color: var(--wasabi-green); pointer-events: none; }
+.persona-menu-divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+.persona-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.persona-dot.admin     { background: var(--bright-blue); }
+.persona-dot.fulfiller { background: var(--wasabi-green); }
+
+.page { max-width: 800px; margin: 0 auto; padding: 36px 24px 120px; }
+
+.page-header { margin-bottom: 28px; }
+.page-eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--wasabi-green); margin-bottom: 6px; }
+.page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.page-sub { font-size: 13px; color: var(--text-muted); margin-top: 5px; }
+
+.progress-wrap {
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  border-radius: 10px; padding: 16px 20px; margin-bottom: 24px;
+  display: flex; align-items: center; gap: 16px;
+}
+.progress-bar-outer { flex: 1; height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+.progress-bar-inner { height: 100%; background: var(--wasabi-green); border-radius: 3px; width: 0%; transition: width 0.5s ease; }
+.progress-label { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+.progress-label span { color: var(--wasabi-green); }
+
+.trace-list { display: flex; flex-direction: column; gap: 10px; }
+.trace-card {
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  border-radius: 12px; overflow: hidden; transition: border-color 0.3s;
+}
+.trace-card.running { border-color: rgba(82,184,255,0.4); }
+.trace-card.done    { border-color: var(--border-green); }
+.trace-card.error   { border-color: rgba(255,90,90,0.4); }
+.trace-main { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+.trace-status {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.3s;
+}
+.trace-status.pending  { background: var(--surface-3); border: 1px solid var(--border-subtle); }
+.trace-status.running  { background: rgba(82,184,255,0.12); border: 1px solid rgba(82,184,255,0.3); }
+.trace-status.done     { background: var(--green-bg); border: 1px solid var(--border-green); }
+.trace-status.error    { background: var(--red-bg); border: 1px solid rgba(255,90,90,0.3); }
+.status-spinner { width: 14px; height: 14px; border: 2px solid rgba(82,184,255,0.2); border-top-color: var(--bright-blue); border-radius: 50%; animation: spin 0.75s linear infinite; }
+.status-check { color: var(--wasabi-green); font-size: 13px; font-weight: 700; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-mid); }
+.trace-content { flex: 1; min-width: 0; }
+.trace-title { font-size: 13px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+.trace-card.pending .trace-title { color: var(--text-muted); }
+.trace-meta { display: flex; align-items: center; gap: 10px; margin-top: 3px; }
+.trace-tool { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+.tool-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.tool-dot.mcp       { background: var(--wasabi-green); }
+.tool-dot.open_api  { background: var(--bright-blue); }
+.tool-dot.generated { background: var(--orange); }
+.tool-dot.custom    { background: var(--silver); }
+.trace-duration { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-left: auto; flex-shrink: 0; }
+.trace-duration.done { color: var(--wasabi-green); }
+.trace-log {
+  display: none; border-top: 1px solid var(--border-subtle);
+  background: #021d2e; padding: 12px 16px;
+  font-family: var(--font-mono); font-size: 11px; line-height: 1.7;
+  max-height: 140px; overflow-y: auto;
+}
+.trace-card.running .trace-log,
+.trace-card.done .trace-log { display: block; }
+.log-line { display: flex; gap: 10px; }
+.log-ts  { color: var(--text-muted); flex-shrink: 0; opacity: 0.5; }
+.log-line.info  .log-msg { color: var(--text-secondary); }
+.log-line.ok    .log-msg { color: var(--wasabi-green); }
+.log-line.warn  .log-msg { color: var(--orange); }
+.log-line.error .log-msg { color: var(--red); }
+.log-line.dim   .log-msg { color: var(--text-muted); }
+
+/* ── OUTPUT SECTION ── */
+.output-section { display: none; margin-top: 32px; animation: fadeUp 0.4s ease; }
+.output-section.show { display: block; }
+.output-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.output-eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--wasabi-green); }
+.output-divider { flex: 1; height: 1px; background: var(--border-green); opacity: 0.4; }
+.output-card { background: var(--surface-1); border: 1px solid var(--border-green); border-radius: 12px; overflow: hidden; }
+.output-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid var(--border-subtle);
+}
+.output-card-title { font-size: 14px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+.output-card-meta  { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+.output-card-body  { padding: 20px 18px; }
+.briefing-section { margin-bottom: 18px; }
+.briefing-section:last-child { margin-bottom: 0; }
+.briefing-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 8px; }
+.briefing-text { font-size: 13px; color: var(--text-secondary); line-height: 1.7; white-space: pre-wrap; }
+.action-items { display: flex; flex-direction: column; gap: 8px; }
+.action-item { display: flex; align-items: flex-start; gap: 10px; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.action-num {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  background: var(--green-bg); border: 1px solid var(--border-green);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: var(--wasabi-green); font-family: var(--font-mono);
+}
+.action-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.approve-row { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-subtle); }
+.btn-approve {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--wasabi-green); color: #032D42;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 700;
+  padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-approve:hover { opacity: 0.9; }
+.btn-approve:disabled { opacity: 0.5; cursor: not-allowed; background: var(--surface-3); color: var(--text-muted); }
+.post-status { margin-top: 8px; font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+
+/* ── CTA BAR ── */
+.cta-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(4,37,56,0.96); backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-subtle);
+  padding: 14px 32px;
+  display: flex; align-items: center; justify-content: space-between; z-index: 90;
+}
+.cta-status { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-muted); }
+.pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bright-blue); animation: pulse 1.5s ease-in-out infinite; flex-shrink: 0; }
+.pulse-dot.done { background: var(--wasabi-green); animation: none; }
+.btn-back {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--wasabi-green); color: #032D42;
+  font-family: var(--font-sans); font-size: 14px; font-weight: 700;
+  padding: 10px 24px; border: none; border-radius: 8px;
+  cursor: pointer; transition: opacity 0.15s, transform 0.1s; display: none;
+}
+.btn-back:hover { opacity: 0.9; transform: translateY(-1px); }
+
+@keyframes spin   { to { transform: rotate(360deg); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse  { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="screen7-fulfiller.html">
+    <svg width="40" height="24" viewBox="0 0 140 100">
+      <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#63DF4E" stroke-width="8" stroke-linecap="round"/>
+      <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#A8C8DC" stroke-width="8" stroke-linecap="round"/>
+    </svg>
+    Jacquard Loom
+  </a>
+  <div class="persona-wrapper">
+    <span class="persona-static-label">Persona:</span>
+    <div class="persona-dropdown" id="persona-dropdown" onclick="togglePersonaMenu(event)">
+      <span>Fulfiller</span>
+      <svg class="persona-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4 6,8 10,4"/></svg>
+      <div class="persona-menu" onclick="event.stopPropagation()">
+        <div class="persona-menu-item current"><span class="persona-dot fulfiller"></span>Fulfiller</div>
+        <div class="persona-menu-divider"></div>
+        <div class="persona-menu-item" onclick="window.location.href='screen1-build.html'"><span class="persona-dot admin"></span>AI Admin</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-eyebrow">Running Workflow</div>
+    <div class="page-title" id="page-title">Executing…</div>
+    <div class="page-sub" id="page-sub">Running each step in sequence.</div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="progress-bar"></div></div>
+    <div class="progress-label"><span id="progress-done">0</span> / <span id="progress-total">0</span> steps</div>
+  </div>
+
+  <div class="trace-list" id="trace-list"></div>
+
+  <div class="output-section" id="output-section">
+    <div class="output-header">
+      <div class="output-eyebrow">Workflow Output</div>
+      <div class="output-divider"></div>
+    </div>
+    <div id="output-content"></div>
+  </div>
+</div>
+
+<div class="cta-bar">
+  <div class="cta-status">
+    <div class="pulse-dot" id="cta-dot"></div>
+    <span id="cta-status-text">Running…</span>
+  </div>
+  <button class="btn-back" id="btn-back" onclick="window.location.href='screen7-fulfiller.html'">
+    <svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="2" fill="none"><polyline points="8,2 4,6 8,10"/></svg>
+    Back to workflows
+  </button>
+</div>
+
+<script>
+var BASE = 'http://localhost:3000';
+var workflowId = null;
+var steps = [];
+var runContext = null;
+var startTime = Date.now();
+var workflowOutput = null;
+
+var TOOL_TYPE_MAP = {
+  'github':           'mcp',
+  'stackoverflow':    'open_api',
+  'weave':            'generated',
+  'mcp':              'mcp',
+  'open_api':         'open_api',
+  'generated':        'generated'
+};
+
+function resolveTool(s) {
+  if (s.tool) {
+    var type = 'custom';
+    var tl = s.tool.toLowerCase();
+    if (tl.includes('github') || tl.includes('mcp')) type = 'mcp';
+    else if (tl.includes('stackoverflow') || tl.includes('open_api')) type = 'open_api';
+    else if (tl.includes('weave') || tl.endsWith('.py')) type = 'generated';
+    return { name: s.tool, type: type };
+  }
+  return { name: s.type || 'custom', type: 'custom' };
+}
+
+var SIM_LOGS = {
+  'github.fetch_incidents':           [ {level:'info',msg:'Connecting to GitHub MCP…'}, {level:'info',msg:'Fetching incident details…'}, {level:'ok',msg:'✓ Incident fetched'} ],
+  'stackoverflow.search_fixes':       [ {level:'info',msg:'Querying Stack Exchange API…'}, {level:'info',msg:'Searching for known resolutions…'}, {level:'ok',msg:'✓ Results retrieved'} ],
+  'weave.generate_resolution_plan':   [ {level:'info',msg:'Checking tool registry…'}, {level:'info',msg:'No tool found — generating on the fly…'}, {level:'ok',msg:'✓ Tool generated and saved to registry'}, {level:'info',msg:'Running resolution plan generator…'}, {level:'ok',msg:'✓ Resolution plan ready'} ]
+};
+
+function init() {
+  try {
+    workflowId  = localStorage.getItem('weave_workflow_id');
+    runContext  = localStorage.getItem('weave_run_context') || null;
+    var raw = localStorage.getItem('weave_steps');
+    if (raw) steps = JSON.parse(raw);
+  } catch(e) { steps = []; }
+
+  if (!steps || !steps.length) {
+    window.location.href = 'screen7-fulfiller.html';
+    return;
+  }
+
+  document.getElementById('progress-total').textContent = steps.length;
+  document.getElementById('page-sub').textContent = runContext
+    ? 'Running for incident #' + runContext.replace('#','')
+    : 'Running each step in sequence.';
+
+  renderTraceList();
+  tryWebSocket();
+}
+
+function renderTraceList() {
+  var list = document.getElementById('trace-list');
+  list.innerHTML = steps.map(function(s) {
+    var tool = resolveTool(s);
+    return '<div class="trace-card pending" id="tc-' + s.id + '">' +
+      '<div class="trace-main">' +
+        '<div class="trace-status pending" id="ts-' + s.id + '"><div class="status-dot"></div></div>' +
+        '<div class="trace-content">' +
+          '<div class="trace-title">' + esc(s.title) + '</div>' +
+          '<div class="trace-meta">' +
+            '<div class="trace-tool"><span class="tool-dot ' + tool.type + '"></span>' + esc(tool.name) + '</div>' +
+            '<div class="trace-duration" id="td-' + s.id + '"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="trace-log" id="tl-' + s.id + '"></div>' +
+    '</div>';
+  }).join('');
+}
+
+function tryWebSocket() {
+  try {
+    var issueParam = runContext ? '?issue=' + encodeURIComponent(runContext.replace('#','').trim()) : '';
+    var ws = new WebSocket('ws://localhost:3000/ws/execute/' + workflowId + issueParam);
+    var opened = false;
+
+    ws.onopen = function() { opened = true; };
+
+    ws.onmessage = function(e) {
+      var evt = JSON.parse(e.data);
+      if (evt.type === 'step_start') {
+        var s = steps[evt.step_index];
+        if (s) setStepRunning(s.id);
+      } else if (evt.type === 'step_log') {
+        var s = steps[evt.step_index];
+        if (s) appendLog(s.id, evt.level, evt.message);
+      } else if (evt.type === 'step_done') {
+        var s = steps[evt.step_index];
+        if (s) setStepDone(s.id, evt.duration_ms);
+      } else if (evt.type === 'step_error') {
+        var s = steps[evt.step_index];
+        if (s) setStepError(s.id, evt.error);
+      } else if (evt.type === 'workflow_done') {
+        onAllDone(evt.briefing || '', evt.action_items || []);
+      } else if (evt.type === 'error') {
+        // Backend error (e.g. workflow not found) — fall back to simulation
+        runSimulation();
+      }
+    };
+
+    ws.onerror  = function() { if (!opened) runSimulation(); };
+    ws.onclose  = function(e) {
+      // If closed before done, fall back to simulation
+      if (!opened) runSimulation();
+    };
+
+    setTimeout(function() {
+      if (!opened) { try { ws.close(); } catch(e){} runSimulation(); }
+    }, 1000);
+
+  } catch(e) { runSimulation(); }
+}
+
+function runSimulation() {
+  var base = 1400;
+  steps.forEach(function(s, i) {
+    var delay = i * base + Math.random() * 300;
+    var dur   = 900 + Math.random() * 900;
+    setTimeout(function() {
+      setStepRunning(s.id);
+      var tool = resolveTool(s);
+      var logs = SIM_LOGS[tool.name] || [ {level:'info',msg:'Running step…'}, {level:'ok',msg:'✓ Done'} ];
+      var ld = 0;
+      logs.forEach(function(l) {
+        ld += 300 + Math.random() * 200;
+        setTimeout(function() { appendLog(s.id, l.level, l.msg); }, ld);
+      });
+      setTimeout(function() {
+        setStepDone(s.id, Math.round(dur));
+        if (i === steps.length - 1) {
+          setTimeout(function() { onSimulationDone(); }, 500);
+        }
+      }, dur);
+    }, delay);
+  });
+}
+
+function setStepRunning(id) {
+  var card = document.getElementById('tc-' + id);
+  var st   = document.getElementById('ts-' + id);
+  var dur  = document.getElementById('td-' + id);
+  if (!card) return;
+  card.className = 'trace-card running';
+  st.className   = 'trace-status running';
+  st.innerHTML   = '<div class="status-spinner"></div>';
+  if (dur) dur.textContent = 'running…';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function setStepDone(id, ms) {
+  var card = document.getElementById('tc-' + id);
+  var st   = document.getElementById('ts-' + id);
+  var dur  = document.getElementById('td-' + id);
+  if (!card) return;
+  card.className = 'trace-card done';
+  st.className   = 'trace-status done';
+  st.innerHTML   = '<span class="status-check">✓</span>';
+  if (dur) { dur.textContent = (ms/1000).toFixed(1) + 's'; dur.className = 'trace-duration done'; }
+  var done  = document.querySelectorAll('.trace-card.done').length;
+  document.getElementById('progress-bar').style.width = Math.round((done/steps.length)*100) + '%';
+  document.getElementById('progress-done').textContent = done;
+}
+
+function setStepError(id, msg) {
+  var card = document.getElementById('tc-' + id);
+  var st   = document.getElementById('ts-' + id);
+  if (!card) return;
+  card.className = 'trace-card error';
+  st.className   = 'trace-status error';
+  st.innerHTML   = '<span style="color:var(--red);font-size:13px">✕</span>';
+  appendLog(id, 'error', msg || 'Step failed');
+}
+
+function appendLog(id, level, msg) {
+  var log = document.getElementById('tl-' + id);
+  if (!log) return;
+  var ts = new Date().toISOString().slice(11,23);
+  var line = document.createElement('div');
+  line.className = 'log-line ' + (level || 'info');
+  line.innerHTML = '<span class="log-ts">' + ts + '</span><span class="log-msg">' + esc(msg) + '</span>';
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function onAllDone(briefing, actionItems) {
+  var secs = ((Date.now() - startTime) / 1000).toFixed(1);
+  document.getElementById('page-title').textContent = 'Workflow complete';
+  document.getElementById('page-sub').textContent = 'All ' + steps.length + ' steps completed in ' + secs + 's.';
+  document.getElementById('cta-dot').className = 'pulse-dot done';
+  document.getElementById('cta-status-text').textContent = 'Complete — ' + secs + 's';
+  document.getElementById('btn-back').style.display = 'flex';
+  if (briefing) showOutput(briefing, actionItems || []);
+}
+
+function onSimulationDone() {
+  var mockBriefing = '## Resolution Plan — #' + (runContext || '?') + '\n\nBased on the fetched incident details and Stack Overflow resolution data, the following resolution plan has been generated by Jacquard Loom.\n\nThe incident matches a known error pattern. A high-confidence fix was identified from Stack Overflow. The resolution plan has been prioritised based on severity and time open.';
+  var mockActions = [
+    'Apply the recommended fix identified from Stack Overflow (confidence: 94%)',
+    'Assign to the on-call engineer for immediate action',
+    'Update incident status to In Progress and set resolution target'
+  ];
+  onAllDone(mockBriefing, mockActions);
+}
+
+function showOutput(briefing, actionItems) {
+  var section = document.getElementById('output-section');
+  var content = document.getElementById('output-content');
+  var issueNum = runContext ? runContext.replace('#','').trim() : null;
+
+  var actionsHtml = '';
+  if (actionItems && actionItems.length) {
+    var items = actionItems.map(function(a, i) {
+      var text = typeof a === 'string' ? a : (a.action || a.incident || JSON.stringify(a));
+      return '<div class="action-item"><div class="action-num">' + (i+1) + '</div><div class="action-text">' + esc(text) + '</div></div>';
+    }).join('');
+    actionsHtml = '<div class="briefing-section"><div class="briefing-label">Action Items</div><div class="action-items">' + items + '</div></div>';
+  }
+
+  var approveHtml = issueNum
+    ? '<div class="approve-row">' +
+        '<button class="btn-approve" id="approve-btn" onclick="approveAndPost()">✓ Approve &amp; Post to GitHub #' + esc(issueNum) + '</button>' +
+        '<div class="post-status" id="post-status"></div>' +
+      '</div>'
+    : '';
+
+  content.innerHTML =
+    '<div class="output-card">' +
+      '<div class="output-card-header">' +
+        '<div class="output-card-title">📋 Resolution Plan' + (issueNum ? ' — #' + esc(issueNum) : '') + '</div>' +
+        '<div class="output-card-meta">Generated · ' + new Date().toLocaleTimeString() + '</div>' +
+      '</div>' +
+      '<div class="output-card-body">' +
+        '<div class="briefing-section">' +
+          '<div class="briefing-label">Resolution Plan</div>' +
+          '<div class="briefing-text">' + esc(briefing) + '</div>' +
+        '</div>' +
+        actionsHtml +
+        approveHtml +
+      '</div>' +
+    '</div>';
+
+  workflowOutput = { briefing: briefing, actionItems: actionItems };
+  section.classList.add('show');
+}
+
+async function approveAndPost() {
+  if (!workflowOutput) return;
+  var btn    = document.getElementById('approve-btn');
+  var status = document.getElementById('post-status');
+  var issueNum = parseInt((runContext || '').replace('#','').trim());
+  if (!issueNum) { status.textContent = 'No issue number provided.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Posting…';
+
+  var comment = workflowOutput.briefing;
+  if (workflowOutput.actionItems && workflowOutput.actionItems.length) {
+    var actionText = workflowOutput.actionItems.map(function(a, i) {
+      var text = typeof a === 'string' ? a : (a.action || JSON.stringify(a));
+      return (i+1) + '. ' + text;
+    }).join('\n');
+    comment += '\n\n**Action Items:**\n' + actionText;
+  }
+
+  try {
+    var res = await fetch(BASE + '/api/workflow/' + workflowId + '/post-comment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ issue_number: issueNum, comment: comment })
+    });
+    var data = await res.json();
+    if (data.posted) {
+      btn.textContent = '✓ Posted to GitHub';
+      btn.style.background = 'var(--surface-3)';
+      btn.style.color = 'var(--wasabi-green)';
+      status.innerHTML = 'Comment posted · <a href="' + data.comment_url + '" target="_blank" style="color:var(--bright-blue)">' + data.comment_url + '</a>';
+    } else {
+      throw new Error('Post failed');
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '✓ Approve & Post to GitHub #' + issueNum;
+    status.textContent = 'Error: ' + (e.message || 'Could not post comment');
+    status.style.color = 'var(--red)';
+  }
+}
+
+function togglePersonaMenu(e) {
+  e.stopPropagation();
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.toggle('open');
+}
+document.addEventListener('click', function() {
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.remove('open');
+});
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jacquard Loom — Library</title>
+<style>
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans Mono'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSansMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+
+:root {
+  --infinite-blue: #032D42;
+  --wasabi-green: #63DF4E;
+  --silver: #A8C8DC;
+  --bright-blue: #52B8FF;
+  --font-sans: 'ServiceNow Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'ServiceNow Sans Mono', 'Consolas', monospace;
+  --surface-1: #042538;
+  --surface-2: #063347;
+  --surface-3: #0a3d55;
+  --border-subtle: rgba(82,184,255,0.12);
+  --border-mid: rgba(82,184,255,0.22);
+  --border-green: rgba(99,223,78,0.3);
+  --green-bg: rgba(99,223,78,0.08);
+  --text-primary: #FFFFFF;
+  --text-secondary: #A8C8DC;
+  --text-muted: #5A8A9F;
+  --red: #FF5A5A;
+  --red-bg: rgba(255,90,90,0.08);
+  --orange: #F5A623;
+  --orange-bg: rgba(245,166,35,0.08);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; background: var(--infinite-blue); color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; }
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 52px;
+  background: rgba(3,45,66,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 600; color: var(--text-primary);
+  cursor: pointer; user-select: none; letter-spacing: -0.01em; text-decoration: none;
+}
+.nav-links { display: flex; gap: 4px; }
+.nav-link {
+  background: none; border: none; color: var(--text-muted);
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  padding: 6px 14px; border-radius: 6px; cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.nav-link:hover { color: var(--text-primary); background: var(--surface-3); }
+.nav-link.active { color: var(--wasabi-green); background: var(--green-bg); }
+
+/* ── PAGE ── */
+.page { max-width: 1100px; margin: 0 auto; padding: 36px 24px 80px; }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 28px; gap: 16px;
+}
+.page-header-left {}
+.page-eyebrow {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--wasabi-green); margin-bottom: 6px;
+}
+.page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.page-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.btn-new {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--wasabi-green); color: #032D42;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 700;
+  padding: 9px 20px; border: none; border-radius: 8px;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: opacity 0.15s, transform 0.1s; letter-spacing: -0.01em;
+}
+.btn-new:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* ── STAT STRIP ── */
+.stat-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-tile {
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  border-radius: 10px; padding: 14px 18px;
+}
+.stat-tile-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 6px; }
+.stat-tile-val { font-size: 28px; font-weight: 700; font-family: var(--font-mono); color: var(--text-primary); letter-spacing: -0.02em; }
+.stat-tile-val.green { color: var(--wasabi-green); }
+.stat-tile-val.blue  { color: var(--bright-blue); }
+
+/* ── TOOLBAR ── */
+.toolbar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-pill {
+  background: none; border: 1px solid var(--border-subtle);
+  color: var(--text-muted); font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+  padding: 5px 13px; border-radius: 20px; cursor: pointer;
+  transition: all 0.15s;
+}
+.filter-pill:hover { border-color: var(--border-mid); color: var(--text-secondary); }
+.filter-pill.active { background: var(--green-bg); border-color: var(--border-green); color: var(--wasabi-green); }
+.toolbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-wrap {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 7px 12px;
+  transition: border-color 0.15s;
+}
+.search-wrap:focus-within { border-color: var(--border-green); }
+.search-wrap input {
+  background: none; border: none; outline: none;
+  font-family: var(--font-sans); font-size: 12px; color: var(--text-primary); width: 180px;
+}
+.search-wrap input::placeholder { color: var(--text-muted); }
+.sort-select {
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  color: var(--text-secondary); font-family: var(--font-sans); font-size: 12px;
+  padding: 7px 12px; border-radius: 8px; outline: none; cursor: pointer;
+}
+
+/* ── GRID ── */
+.wf-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px;
+}
+.wf-card {
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  border-radius: 12px; overflow: hidden; cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+  animation: fadeUp 0.18s ease both;
+}
+.wf-card:hover { border-color: var(--border-mid); transform: translateY(-2px); }
+.wf-card.active-card { border-color: var(--border-green); box-shadow: 0 0 0 1px rgba(99,223,78,0.15); }
+
+/* Status bar at top of card */
+.card-status-bar { height: 3px; width: 100%; }
+.bar-published { background: var(--wasabi-green); }
+.bar-sandbox   { background: var(--bright-blue); }
+.bar-validated { background: var(--orange); }
+.bar-draft     { background: var(--text-muted); }
+.bar-error     { background: var(--red); }
+
+.card-body { padding: 16px; }
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.card-icon {
+  width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.card-icon.itsm { background: rgba(255,90,90,0.1); }
+.card-icon.hr   { background: rgba(82,184,255,0.1); }
+.card-icon.csm  { background: rgba(99,223,78,0.1); }
+.card-icon.fin  { background: rgba(245,166,35,0.1); }
+.card-icon.it   { background: rgba(168,200,220,0.1); }
+
+.card-title-wrap { flex: 1; min-width: 0; }
+.card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; line-height: 1.3; }
+.card-id { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+.status-badge {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 3px 8px; border-radius: 4px; flex-shrink: 0; white-space: nowrap;
+}
+.badge-published { background: var(--green-bg);   color: var(--wasabi-green); border: 1px solid var(--border-green); }
+.badge-sandbox   { background: rgba(82,184,255,0.08); color: var(--bright-blue); border: 1px solid rgba(82,184,255,0.25); }
+.badge-validated { background: var(--orange-bg);   color: var(--orange);       border: 1px solid rgba(245,166,35,0.3); }
+.badge-draft     { background: var(--surface-3);   color: var(--text-muted);   border: 1px solid var(--border-subtle); }
+.badge-error     { background: var(--red-bg);      color: var(--red);          border: 1px solid rgba(255,90,90,0.3); }
+
+.card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.55; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.tag {
+  font-size: 10px; font-family: var(--font-mono); color: var(--text-muted);
+  background: var(--surface-3); border-radius: 4px; padding: 2px 7px;
+}
+.card-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--border-subtle); padding-top: 10px;
+  font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);
+}
+.card-meta { display: flex; align-items: center; gap: 10px; }
+.card-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+.wf-card:hover .card-actions { opacity: 1; }
+.card-btn {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  padding: 4px 7px; border-radius: 5px; font-family: var(--font-sans); font-size: 11px;
+  transition: color 0.12s, background 0.12s; display: flex; align-items: center; gap: 4px;
+}
+.card-btn:hover { color: var(--text-primary); background: var(--surface-3); }
+.card-btn.del:hover { color: var(--red); background: var(--red-bg); }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  padding: 80px 24px; text-align: center; grid-column: 1 / -1;
+}
+.empty-state.show { display: flex; }
+.empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.4; }
+.empty-title { font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+.empty-sub { font-size: 13px; color: var(--text-muted); }
+
+/* ── DRAWER ── */
+.drawer-overlay {
+  position: fixed; inset: 0; background: rgba(3,45,66,0.5);
+  z-index: 200; display: none; backdrop-filter: blur(4px);
+}
+.drawer-overlay.show { display: block; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 420px;
+  background: var(--surface-1); border-left: 1px solid var(--border-mid);
+  z-index: 201; display: flex; flex-direction: column;
+  transform: translateX(100%); transition: transform 0.28s cubic-bezier(.22,.68,0,1.2);
+  overflow: hidden;
+}
+.drawer.show { transform: translateX(0); }
+.drawer-header {
+  padding: 20px 24px 16px; border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-shrink: 0;
+}
+.drawer-title { font-size: 16px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; line-height: 1.3; }
+.drawer-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.drawer-close {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 18px; padding: 2px 6px; border-radius: 5px; flex-shrink: 0;
+  transition: color 0.12s; line-height: 1;
+}
+.drawer-close:hover { color: var(--text-primary); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.drawer-body::-webkit-scrollbar { width: 4px; }
+.drawer-body::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
+
+.drawer-section { margin-bottom: 22px; }
+.drawer-section-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px;
+}
+.drawer-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.meta-item { background: var(--surface-2); border-radius: 7px; padding: 10px 12px; }
+.meta-key { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 3px; }
+.meta-val { font-size: 12px; font-weight: 500; color: var(--text-secondary); font-family: var(--font-mono); }
+
+/* Step timeline in drawer */
+.step-timeline { display: flex; flex-direction: column; gap: 0; }
+.timeline-row { display: flex; gap: 14px; position: relative; }
+.timeline-left { display: flex; flex-direction: column; align-items: center; width: 24px; flex-shrink: 0; }
+.timeline-dot {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--surface-3); border: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: var(--text-muted);
+  font-family: var(--font-mono); flex-shrink: 0; margin-top: 2px;
+}
+.timeline-line { width: 1px; flex: 1; background: var(--border-subtle); margin: 3px 0; min-height: 12px; }
+.timeline-row:last-child .timeline-line { display: none; }
+.timeline-content { flex: 1; padding-bottom: 14px; }
+.timeline-step-title { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.timeline-tool {
+  font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);
+  display: flex; align-items: center; gap: 5px; margin-top: 3px;
+}
+.tool-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.tool-dot.mcp      { background: var(--wasabi-green); }
+.tool-dot.open_api { background: var(--bright-blue); }
+.tool-dot.generated { background: var(--orange); }
+.tool-dot.custom   { background: var(--silver); }
+
+.drawer-footer {
+  padding: 16px 24px; border-top: 1px solid var(--border-subtle); flex-shrink: 0;
+  display: flex; gap: 10px;
+}
+.btn-run-again {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--wasabi-green); color: #032D42;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 700;
+  padding: 10px; border: none; border-radius: 8px; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-run-again:hover { opacity: 0.9; }
+.btn-publish {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  background: none; border: 1px solid var(--border-green);
+  color: var(--wasabi-green); font-family: var(--font-sans);
+  font-size: 13px; font-weight: 600; padding: 10px 16px;
+  border-radius: 8px; cursor: pointer; transition: background 0.15s;
+}
+.btn-publish:hover { background: var(--green-bg); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; top: 64px; right: 20px;
+  background: var(--surface-3); border: 1px solid var(--border-mid);
+  border-radius: 8px; padding: 10px 16px;
+  font-size: 13px; color: var(--text-primary);
+  display: flex; align-items: center; gap: 8px;
+  z-index: 400; transform: translateX(120%);
+  transition: transform 0.28s cubic-bezier(.22,.68,0,1.35);
+}
+.toast.show { transform: translateX(0); }
+.toast.ok  { border-color: rgba(99,223,78,0.4); }
+.toast.err { border-color: rgba(255,90,90,0.4); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── PERSONA SWITCHER ── */
+nav { overflow: visible !important; }
+.persona-wrapper { display: flex; align-items: center; gap: 8px; }
+.persona-static-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; user-select: none; }
+.persona-dropdown {
+  position: relative; display: flex; align-items: center; gap: 7px;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 6px 12px;
+  font-size: 12px; font-weight: 600; color: var(--text-primary);
+  cursor: pointer; user-select: none; transition: border-color 0.15s;
+}
+.persona-dropdown:hover { border-color: var(--border-mid); }
+.persona-dropdown.open  { border-color: var(--border-green); }
+.persona-chevron { color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
+.persona-dropdown.open .persona-chevron { transform: rotate(180deg); }
+.persona-menu {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--surface-2); border: 1px solid var(--border-mid);
+  border-radius: 10px; padding: 6px; min-width: 180px; z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.persona-dropdown.open .persona-menu { display: block; }
+.persona-menu-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; transition: background 0.12s; white-space: nowrap;
+}
+.persona-menu-item:hover { background: var(--surface-3); color: var(--text-primary); }
+.persona-menu-item.current { color: var(--wasabi-green); pointer-events: none; }
+.persona-menu-divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+.persona-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.persona-dot.admin     { background: var(--bright-blue); }
+.persona-dot.fulfiller { background: var(--wasabi-green); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="screen1-build.html">
+    <svg width="40" height="24" viewBox="0 0 140 100">
+      <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#63DF4E" stroke-width="8" stroke-linecap="round"/>
+      <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#A8C8DC" stroke-width="8" stroke-linecap="round"/>
+    </svg>
+    Jacquard Loom
+  </a>
+  <div class="nav-links">
+    <button class="nav-link" onclick="window.location.href='screen1-build.html'">Build</button>
+    <button class="nav-link active" onclick="window.location.href='screen4-library.html'">Library</button>
+    <button class="nav-link" onclick="window.location.href='screen5-tools.html'">Tools</button>
+  </div>
+  <div class="persona-wrapper">
+    <span class="persona-static-label">Persona:</span>
+    <div class="persona-dropdown" id="persona-dropdown" onclick="togglePersonaMenu(event)">
+      <span>AI Admin</span>
+      <svg class="persona-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4 6,8 10,4"/></svg>
+      <div class="persona-menu" onclick="event.stopPropagation()">
+        <div class="persona-menu-item current"><span class="persona-dot admin"></span>AI Admin</div>
+        <div class="persona-menu-divider"></div>
+        <div class="persona-menu-item" onclick="window.location.href='screen7-fulfiller.html'"><span class="persona-dot fulfiller"></span>Fulfiller</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-eyebrow">Workflow Library</div>
+      <div class="page-title">All workflows</div>
+      <div class="page-sub">Browse, run, and manage your saved workflows.</div>
+    </div>
+    <button class="btn-new" onclick="window.location.href='screen1-build.html'">
+      <svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="2.2" fill="none">
+        <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
+      </svg>
+      New workflow
+    </button>
+  </div>
+
+  <!-- Stat strip -->
+  <div class="stat-strip">
+    <div class="stat-tile">
+      <div class="stat-tile-label">Total</div>
+      <div class="stat-tile-val" id="stat-total">0</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-tile-label">Published</div>
+      <div class="stat-tile-val green" id="stat-published">0</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-tile-label">In Progress</div>
+      <div class="stat-tile-val blue" id="stat-wip">0</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-tile-label">Avg Steps</div>
+      <div class="stat-tile-val" id="stat-avg">—</div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="filter-pills">
+      <button class="filter-pill active" onclick="setFilter('all', this)">All</button>
+      <button class="filter-pill" onclick="setFilter('published', this)">Published</button>
+      <button class="filter-pill" onclick="setFilter('sandbox', this)">Sandbox Tested</button>
+      <button class="filter-pill" onclick="setFilter('validated', this)">Validated</button>
+      <button class="filter-pill" onclick="setFilter('draft', this)">Draft</button>
+    </div>
+    <div class="toolbar-right">
+      <div class="search-wrap">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="var(--text-muted)" stroke-width="1.6" stroke-linecap="round">
+          <circle cx="5.5" cy="5.5" r="4"/><line x1="8.5" y1="8.5" x2="12" y2="12"/>
+        </svg>
+        <input type="text" id="search" placeholder="Search workflows…" oninput="applyFilters()">
+      </div>
+      <select class="sort-select" id="sort-select" onchange="applyFilters()">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="name">Name A–Z</option>
+        <option value="steps">Most steps</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Grid -->
+  <div class="wf-grid" id="wf-grid">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">🧵</div>
+      <div class="empty-title">No workflows found</div>
+      <div class="empty-sub">Try a different filter or build a new workflow.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Drawer overlay -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- Detail drawer -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div>
+      <div class="drawer-title" id="drawer-title">—</div>
+      <div class="drawer-id" id="drawer-id">—</div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-section">
+      <div class="drawer-section-label">Description</div>
+      <div class="drawer-desc" id="drawer-desc">—</div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-section-label">Details</div>
+      <div class="meta-grid" id="drawer-meta"></div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-section-label">Steps</div>
+      <div class="step-timeline" id="drawer-steps"></div>
+    </div>
+  </div>
+  <div class="drawer-footer">
+    <button class="btn-run-again" id="drawer-run-btn" onclick="runFromDrawer()">
+      <svg width="14" height="14" viewBox="0 0 140 100">
+        <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#032D42" stroke-width="10" stroke-linecap="round"/>
+        <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#032D42" stroke-width="10" stroke-linecap="round"/>
+      </svg>
+      Run again
+    </button>
+    <button class="btn-publish" id="drawer-publish-btn" onclick="publishFromDrawer()">Publish</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<script>
+var BASE = 'http://localhost:3000';
+var allWorkflows = [];
+var filteredWorkflows = [];
+var activeFilter = 'all';
+var activeDrawerWf = null;
+var showSeedData = true;
+var SEED_IDS = ['WF-A1B2C','WF-D3E4F','WF-G5H6I','WF-J7K8L','WF-M9N0O','WF-P1Q2R'];
+
+var TOOL_MAP = {
+  auth:     { name: 'servicenow.auth',      type: 'mcp' },
+  fetch:    { name: 'cmdb.query_api',       type: 'open_api' },
+  query:    { name: 'servicenow.table_api', type: 'open_api' },
+  process:  { name: 'triage_scorer.py',     type: 'generated' },
+  logic:    { name: 'flow_logic.py',        type: 'generated' },
+  generate: { name: 'briefing_composer.py', type: 'generated' },
+  notify:   { name: 'slack.mcp + smtp.mcp', type: 'mcp' },
+  action:   { name: 'pagerduty.alert',      type: 'open_api' },
+  write:    { name: 'servicenow.table_api', type: 'open_api' },
+  custom:   { name: 'custom_tool.py',       type: 'custom' }
+};
+
+// ── SEED DATA ──
+function seedWorkflows() {
+  return [
+    {
+      id: 'WF-A1B2C', title: 'Incident Triage & Briefing', icon: '🚨', iconClass: 'itsm',
+      status: 'published', bu: 'ITSM',
+      description: 'When a P1 or P2 incident is raised, automatically triage it by checking the affected CI, pulling recent history, generating a brief for the on-call engineer, and notifying stakeholders.',
+      tags: ['ITSM', 'P1/P2', 'on-call', 'Slack'],
+      steps: [
+        { title: 'Authenticate and resolve user context', type: 'auth' },
+        { title: 'Fetch affected CI and incident history', type: 'fetch' },
+        { title: 'Score and triage incidents by severity', type: 'process' },
+        { title: 'Generate on-call briefing summary', type: 'generate' },
+        { title: 'Notify stakeholders via Slack and email', type: 'notify' }
+      ],
+      created: '2026-06-02T09:14:00Z', duration: '11.8s', runs: 12
+    },
+    {
+      id: 'WF-D3E4F', title: 'Employee Onboarding', icon: '🧑‍💼', iconClass: 'hr',
+      status: 'sandbox',  bu: 'HR Service Delivery',
+      description: 'When a new hire is added to the HR system, automatically trigger their onboarding checklist: provision accounts, assign training modules, and send a welcome email.',
+      tags: ['HR', 'onboarding', 'provisioning', 'training'],
+      steps: [
+        { title: 'Validate new hire record in HR system', type: 'query' },
+        { title: 'Provision AD account and email', type: 'action' },
+        { title: 'Assign mandatory training modules', type: 'write' },
+        { title: 'Schedule introductory meetings', type: 'logic' },
+        { title: 'Send welcome email with first-day instructions', type: 'notify' }
+      ],
+      created: '2026-06-03T11:30:00Z', duration: '14.2s', runs: 3
+    },
+    {
+      id: 'WF-G5H6I', title: 'Customer Escalation Response', icon: '🎧', iconClass: 'csm',
+      status: 'validated', bu: 'Customer Service Management',
+      description: 'When a customer submits a high-priority escalation, identify account health, pull case history, route to the right tier, notify the AE, and draft an initial response.',
+      tags: ['CSM', 'escalation', 'SLA', 'AE notification'],
+      steps: [
+        { title: 'Fetch customer account and health score', type: 'fetch' },
+        { title: 'Pull recent case history', type: 'query' },
+        { title: 'Evaluate routing and SLA criteria', type: 'logic' },
+        { title: 'Notify account executive', type: 'notify' },
+        { title: 'Draft initial response for agent review', type: 'generate' }
+      ],
+      created: '2026-06-03T14:05:00Z', duration: '—', runs: 0
+    },
+    {
+      id: 'WF-J7K8L', title: 'Purchase Order Approval', icon: '💰', iconClass: 'fin',
+      status: 'published', bu: 'Finance & Procurement',
+      description: 'Route purchase orders through the correct approval chain based on amount, department, and vendor status. Notify approvers and update the PO record on decision.',
+      tags: ['Finance', 'procurement', 'approval', 'PO'],
+      steps: [
+        { title: 'Fetch PO record and vendor details', type: 'fetch' },
+        { title: 'Evaluate approval routing rules', type: 'logic' },
+        { title: 'Notify approvers via email', type: 'notify' },
+        { title: 'Update PO state on approval', type: 'write' }
+      ],
+      created: '2026-06-01T08:00:00Z', duration: '9.1s', runs: 28
+    },
+    {
+      id: 'WF-M9N0O', title: 'IT Asset Provisioning', icon: '💻', iconClass: 'it',
+      status: 'draft', bu: 'IT Operations',
+      description: 'When an asset request is submitted, validate the request, check inventory, assign the asset, update the CMDB, and notify the requester.',
+      tags: ['ITOM', 'assets', 'CMDB', 'provisioning'],
+      steps: [
+        { title: 'Validate asset request record', type: 'query' },
+        { title: 'Check inventory availability', type: 'fetch' },
+        { title: 'Assign asset and update CMDB', type: 'write' },
+        { title: 'Notify requester of assignment', type: 'notify' }
+      ],
+      created: '2026-06-04T07:45:00Z', duration: '—', runs: 0
+    },
+    {
+      id: 'WF-P1Q2R', title: 'Change Request Risk Assessment', icon: '🔄', iconClass: 'itsm',
+      status: 'published', bu: 'ITSM',
+      description: 'Automatically assess change request risk by evaluating CI impact, historical change failure rates, and current incident load before scheduling.',
+      tags: ['ITSM', 'change management', 'risk', 'CAB'],
+      steps: [
+        { title: 'Fetch change request and affected CIs', type: 'fetch' },
+        { title: 'Evaluate historical failure rate', type: 'process' },
+        { title: 'Score overall change risk', type: 'logic' },
+        { title: 'Notify CAB and update change record', type: 'notify' }
+      ],
+      created: '2026-05-30T16:20:00Z', duration: '7.4s', runs: 41
+    }
+  ];
+}
+
+// ── INIT ──
+var seedData = [];
+var realWorkflows = [];
+
+function buildWorkflowList() {
+  allWorkflows = showSeedData
+    ? seedData.concat(realWorkflows.filter(function(w) { return SEED_IDS.indexOf(w.id) === -1; }))
+    : realWorkflows.filter(function(w) { return SEED_IDS.indexOf(w.id) === -1; });
+}
+
+function init() {
+  seedData = seedWorkflows();
+
+  // Inject any recently-run workflow from localStorage
+  try {
+    var recentId = localStorage.getItem('weave_workflow_id');
+    var recentSteps = JSON.parse(localStorage.getItem('weave_steps') || '[]');
+    if (recentId && recentSteps.length && !seedData.find(function(w) { return w.id === recentId; })) {
+      realWorkflows.unshift({
+        id: recentId, title: 'New workflow', icon: '🧵', iconClass: 'it',
+        status: 'sandbox', bu: 'Custom',
+        description: 'Recently built workflow.',
+        tags: ['custom'], steps: recentSteps.map(function(s) { return { title: s.title, type: s.type || 'custom' }; }),
+        created: new Date().toISOString(), duration: '—', runs: 1
+      });
+    }
+  } catch(e) {}
+
+  tryFetchFromBackend();
+}
+
+async function tryFetchFromBackend() {
+  try {
+    var res = await fetch(BASE + '/api/workflows');
+    if (res.ok) {
+      var data = await res.json();
+      if (data.workflows && data.workflows.length) {
+        realWorkflows = data.workflows.map(function(w) {
+          var stepDefs = (w.steps || []).map(function(s) {
+            return { title: s.title, type: s.type || 'custom', tool: s.tool || '' };
+          });
+          return {
+            id:          w.workflow_id || w.id,
+            title:       w.workflow_name || w.title || 'Untitled Workflow',
+            icon:        '🧵',
+            iconClass:   'it',
+            status:      w.status || 'sandbox',
+            bu:          'Custom',
+            description: w.prompt || 'Workflow built with Jacquard Loom.',
+            tags:        ['custom'],
+            steps:       stepDefs,
+            created:     w.created_at || new Date().toISOString(),
+            duration:    w.execution_results ? '—' : '—',
+            runs:        0
+          };
+        });
+      }
+    }
+  } catch(e) {}
+  buildWorkflowList();
+  updateStats();
+  applyFilters();
+}
+
+// ── STATS ──
+function updateStats() {
+  document.getElementById('stat-total').textContent = allWorkflows.length;
+  document.getElementById('stat-published').textContent = allWorkflows.filter(function(w) { return w.status === 'published'; }).length;
+  document.getElementById('stat-wip').textContent = allWorkflows.filter(function(w) { return w.status === 'sandbox' || w.status === 'validated'; }).length;
+  var avg = allWorkflows.length ? (allWorkflows.reduce(function(a, w) { return a + (w.steps ? w.steps.length : 0); }, 0) / allWorkflows.length).toFixed(1) : '—';
+  document.getElementById('stat-avg').textContent = avg;
+}
+
+// ── FILTER + RENDER ──
+var currentFilter = 'all';
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(function(p) { p.classList.remove('active'); });
+  btn.classList.add('active');
+  applyFilters();
+}
+
+function applyFilters() {
+  var q = document.getElementById('search').value.toLowerCase();
+  var sort = document.getElementById('sort-select').value;
+
+  filteredWorkflows = allWorkflows.filter(function(w) {
+    var matchFilter = currentFilter === 'all' || w.status === currentFilter;
+    var matchSearch = !q || w.title.toLowerCase().includes(q) || (w.description || '').toLowerCase().includes(q) || (w.tags || []).some(function(t) { return t.toLowerCase().includes(q); });
+    return matchFilter && matchSearch;
+  });
+
+  filteredWorkflows.sort(function(a, b) {
+    if (sort === 'oldest') return new Date(a.created) - new Date(b.created);
+    if (sort === 'name')   return a.title.localeCompare(b.title);
+    if (sort === 'steps')  return (b.steps ? b.steps.length : 0) - (a.steps ? a.steps.length : 0);
+    return new Date(b.created) - new Date(a.created); // newest
+  });
+
+  renderGrid();
+}
+
+function renderGrid() {
+  var grid  = document.getElementById('wf-grid');
+  var empty = document.getElementById('empty-state');
+
+  if (!filteredWorkflows.length) {
+    // Keep empty state in DOM — just clear cards and show it
+    Array.from(grid.querySelectorAll('.wf-card')).forEach(function(c){ c.remove(); });
+    if (empty) empty.classList.add('show');
+    return;
+  }
+  if (empty) empty.classList.remove('show');
+
+  grid.innerHTML = filteredWorkflows.map(function(w) {
+    var date = new Date(w.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return '<div class="wf-card" id="wfc-' + w.id + '" onclick="openDrawer(\'' + w.id + '\')">' +
+      '<div class="card-status-bar bar-' + w.status + '"></div>' +
+      '<div class="card-body">' +
+        '<div class="card-top">' +
+          '<div class="card-icon ' + (w.iconClass || 'itsm') + '">' + (w.icon || '🧵') + '</div>' +
+          '<div class="card-title-wrap">' +
+            '<div class="card-title">' + esc(w.title) + '</div>' +
+            '<div class="card-id">' + esc(w.id) + ' · ' + esc(w.bu || '') + '</div>' +
+          '</div>' +
+          '<span class="status-badge badge-' + w.status + '">' + statusLabel(w.status) + '</span>' +
+        '</div>' +
+        '<div class="card-desc">' + esc(w.description || '') + '</div>' +
+        '<div class="card-tags">' + (w.tags || []).map(function(t) { return '<span class="tag">' + esc(t) + '</span>'; }).join('') + '</div>' +
+        '<div class="card-footer">' +
+          '<div class="card-meta">' +
+            '<span>' + date + '</span>' +
+            '<span>' + (w.steps ? w.steps.length : 0) + ' steps</span>' +
+            (w.duration && w.duration !== '—' ? '<span>' + w.duration + '</span>' : '') +
+          '</div>' +
+          '<div class="card-actions" onclick="event.stopPropagation()">' +
+            '<button class="card-btn" onclick="runWorkflow(\'' + w.id + '\')" title="Run">▶ Run</button>' +
+            '<button class="card-btn" onclick="duplicateWorkflow(\'' + w.id + '\')" title="Duplicate">⎘</button>' +
+            '<button class="card-btn del" onclick="deleteWorkflow(\'' + w.id + '\')" title="Delete">✕</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function statusLabel(s) {
+  return { published: 'Published', sandbox: 'Sandbox', validated: 'Validated', draft: 'Draft', error: 'Error' }[s] || s;
+}
+
+// ── DRAWER ──
+function openDrawer(id) {
+  var w = allWorkflows.find(function(x) { return x.id === id; });
+  if (!w) return;
+  activeDrawerWf = w;
+
+  document.getElementById('drawer-title').textContent = w.title;
+  document.getElementById('drawer-id').textContent = w.id + ' · ' + (w.bu || '');
+  document.getElementById('drawer-desc').textContent = w.description || '—';
+
+  var date = new Date(w.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  document.getElementById('drawer-meta').innerHTML =
+    metaItem('Status', statusLabel(w.status)) +
+    metaItem('Steps', (w.steps ? w.steps.length : 0)) +
+    metaItem('Created', date) +
+    metaItem('Runs', w.runs || 0) +
+    metaItem('Avg Duration', w.duration || '—') +
+    metaItem('BU', w.bu || '—');
+
+  var steps = w.steps || [];
+  document.getElementById('drawer-steps').innerHTML = steps.map(function(s, i) {
+    var tool = TOOL_MAP[s.type] || TOOL_MAP.custom;
+    return '<div class="timeline-row">' +
+      '<div class="timeline-left">' +
+        '<div class="timeline-dot">' + (i + 1) + '</div>' +
+        '<div class="timeline-line"></div>' +
+      '</div>' +
+      '<div class="timeline-content">' +
+        '<div class="timeline-step-title">' + esc(s.title) + '</div>' +
+        '<div class="timeline-tool"><span class="tool-dot ' + tool.type + '"></span>' + esc(tool.name) + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  // Show/hide publish button
+  document.getElementById('drawer-publish-btn').style.display = w.status === 'published' ? 'none' : 'flex';
+
+  document.getElementById('drawer-overlay').classList.add('show');
+  document.getElementById('drawer').classList.add('show');
+}
+
+function metaItem(k, v) {
+  return '<div class="meta-item"><div class="meta-key">' + k + '</div><div class="meta-val">' + esc(String(v)) + '</div></div>';
+}
+
+function closeDrawer() {
+  document.getElementById('drawer-overlay').classList.remove('show');
+  document.getElementById('drawer').classList.remove('show');
+  activeDrawerWf = null;
+}
+
+function runFromDrawer() {
+  if (!activeDrawerWf) return;
+  runWorkflow(activeDrawerWf.id);
+  closeDrawer();
+}
+
+async function publishFromDrawer() {
+  if (!activeDrawerWf) return;
+  try {
+    await fetch(BASE + '/api/workflow/' + activeDrawerWf.id + '/publish', { method: 'POST' });
+  } catch(e) {}
+  activeDrawerWf.status = 'published';
+  updateStats(); applyFilters();
+  closeDrawer();
+  toast('ok', '✓ Workflow published — now visible to fulfillers');
+}
+
+// ── CARD ACTIONS ──
+function runWorkflow(id) {
+  var w = allWorkflows.find(function(x) { return x.id === id; });
+  if (!w) return;
+  localStorage.setItem('weave_workflow_id', w.id);
+  localStorage.setItem('weave_steps', JSON.stringify(w.steps || []));
+  window.location.href = 'screen3-execute.html';
+}
+
+function duplicateWorkflow(id) {
+  var w = allWorkflows.find(function(x) { return x.id === id; });
+  if (!w) return;
+  var copy = Object.assign({}, w, {
+    id: 'WF-' + Math.random().toString(36).slice(2,7).toUpperCase(),
+    title: w.title + ' (copy)', status: 'draft',
+    created: new Date().toISOString(), runs: 0
+  });
+  allWorkflows.unshift(copy);
+  updateStats(); applyFilters();
+  toast('ok', '⎘ Workflow duplicated');
+}
+
+function deleteWorkflow(id) {
+  allWorkflows = allWorkflows.filter(function(w) { return w.id !== id; });
+  updateStats(); applyFilters();
+  toast('ok', 'Workflow deleted');
+}
+
+// ── TOAST ──
+var toastT;
+function toast(type, msg) {
+  var el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  el.className = 'toast ' + type + ' show';
+  clearTimeout(toastT);
+  toastT = setTimeout(function() { el.classList.remove('show'); }, 2800);
+}
+
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Close drawer on Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeDrawer();
+  if (e.shiftKey && e.ctrlKey && e.key === 'X') {
+    e.preventDefault();
+    showSeedData = !showSeedData;
+    buildWorkflowList();
+    updateStats();
+    applyFilters();
+    toast('ok', showSeedData ? '👁 Demo workflows visible' : '🙈 Demo workflows hidden');
+  }
+});
+
+init();
+
+// ── PERSONA SWITCHER ──
+function togglePersonaMenu(e) {
+  e.stopPropagation();
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.toggle('open');
+}
+document.addEventListener('click', function() {
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.remove('open');
+});
+</script>
+</body>
+</html>

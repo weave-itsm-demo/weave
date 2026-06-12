@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jacquard Loom — Build Workflow</title>
+<style>
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans Mono'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSansMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+
+:root {
+  --infinite-blue: #032D42;
+  --wasabi-green: #63DF4E;
+  --silver: #A8C8DC;
+  --bright-blue: #52B8FF;
+  --font-sans: 'ServiceNow Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'ServiceNow Sans Mono', 'Consolas', monospace;
+  --surface-1: #042538;
+  --surface-2: #063347;
+  --surface-3: #0a3d55;
+  --border-subtle: rgba(82,184,255,0.12);
+  --border-mid: rgba(82,184,255,0.22);
+  --border-green: rgba(99,223,78,0.3);
+  --green-bg: rgba(99,223,78,0.08);
+  --text-primary: #FFFFFF;
+  --text-secondary: #A8C8DC;
+  --text-muted: #5A8A9F;
+  --red: #FF5A5A;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; background: var(--infinite-blue); color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; }
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 52px;
+  background: rgba(3,45,66,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 600; color: var(--text-primary);
+  cursor: pointer; user-select: none; letter-spacing: -0.01em;
+}
+.nav-links { display: flex; gap: 4px; }
+.nav-link {
+  background: none; border: none; color: var(--text-muted);
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  padding: 6px 14px; border-radius: 6px; cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.nav-link:hover { color: var(--text-primary); background: var(--surface-3); }
+.nav-link.active { color: var(--wasabi-green); background: var(--green-bg); }
+
+/* ── PAGE ── */
+.page { max-width: 720px; margin: 0 auto; padding: 40px 24px 80px; }
+
+/* ── HEADER ── */
+.header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; margin-bottom: 32px; }
+.header-logo { flex-shrink: 0; }
+.header-text {}
+.header-tagline {
+  font-size: 18px; font-weight: 600; color: var(--text-primary); line-height: 1.3; letter-spacing: -0.01em;
+}
+.header-tagline .green { color: var(--wasabi-green); }
+.header-sub { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+/* ── BUILD BOX ── */
+.build-box {
+  background: var(--surface-1);
+  border: 1px solid var(--border-mid);
+  border-radius: 14px;
+  padding: 24px;
+}
+
+.build-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px;
+}
+
+textarea#prompt {
+  width: 100%; height: 180px;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 10px; padding: 14px 16px;
+  font-family: var(--font-sans); font-size: 15px;
+  color: var(--text-primary); resize: vertical; outline: none;
+  transition: border-color 0.18s; line-height: 1.65;
+}
+textarea#prompt::placeholder { color: var(--text-muted); }
+textarea#prompt:focus { border-color: var(--border-green); }
+
+/* ── PILLS ── */
+.pills-section { margin-top: 18px; }
+.pills-label {
+  font-size: 11px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px;
+}
+.pills-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface-3); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 8px 14px;
+  font-size: 12px; color: var(--text-secondary); cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.pill:hover { border-color: var(--border-green); color: var(--wasabi-green); background: var(--green-bg); }
+.pill-icon {
+  width: 22px; height: 22px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; flex-shrink: 0;
+}
+.pill-icon.itsm { background: rgba(255,90,90,0.12); }
+.pill-icon.hr   { background: rgba(82,184,255,0.12); }
+.pill-icon.vendor { background: rgba(82,184,255,0.12); }
+.pill-icon.csm  { background: rgba(99,223,78,0.12); }
+.pill-text { font-weight: 500; }
+.pill-bu { font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); }
+
+/* ── ADD ADDITIONAL CONTEXT ── */
+.context-section {
+  margin-top: 24px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 20px;
+}
+
+.context-header {
+  margin-bottom: 14px;
+}
+.context-title {
+  font-size: 12px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-secondary);
+}
+.context-desc {
+  font-size: 12px; color: var(--text-muted); margin-top: 3px;
+}
+
+/* Two-card layout */
+.context-cards {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+
+.context-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: border-color 0.15s;
+}
+.context-card:hover { border-color: var(--border-mid); }
+.context-card:focus-within { border-color: var(--border-green); }
+
+.card-header {
+  display: flex; align-items: center; gap: 10px;
+}
+.card-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.card-icon.files { background: rgba(82,184,255,0.1); color: var(--bright-blue); }
+.card-icon.url   { background: rgba(99,223,78,0.1); color: var(--wasabi-green); }
+.card-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.card-hint  { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+/* File upload zone */
+.file-drop-zone {
+  border: 1px dashed var(--border-mid);
+  border-radius: 7px;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+}
+.file-drop-zone:hover,
+.file-drop-zone.dragover {
+  border-color: var(--bright-blue);
+  background: rgba(82,184,255,0.05);
+}
+.file-drop-zone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%;
+}
+.file-drop-text {
+  font-size: 12px; color: var(--text-muted); pointer-events: none;
+}
+.file-drop-text span {
+  color: var(--bright-blue); font-weight: 500;
+}
+.file-formats {
+  font-size: 10px; color: var(--text-muted); margin-top: 4px;
+  font-family: var(--font-mono); pointer-events: none;
+}
+
+/* URL input */
+.url-row {
+  display: flex; gap: 6px; align-items: center;
+}
+.url-input {
+  flex: 1; background: var(--surface-3);
+  border: 1px solid var(--border-subtle); border-radius: 7px;
+  padding: 8px 12px; font-family: var(--font-sans); font-size: 12px;
+  color: var(--text-primary); outline: none;
+  transition: border-color 0.15s;
+}
+.url-input::placeholder { color: var(--text-muted); }
+.url-input:focus { border-color: var(--border-green); }
+.btn-add-url {
+  background: var(--green-bg); border: 1px solid var(--border-green);
+  color: var(--wasabi-green); font-family: var(--font-sans);
+  font-size: 12px; font-weight: 600; padding: 8px 14px;
+  border-radius: 7px; cursor: pointer; white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-add-url:hover { background: rgba(99,223,78,0.15); }
+
+/* Added items list */
+.added-items {
+  margin-top: 12px; display: flex; flex-direction: column; gap: 6px;
+}
+.item-chip {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface-3); border: 1px solid var(--border-subtle);
+  border-radius: 7px; padding: 7px 12px;
+  font-size: 12px; color: var(--text-secondary);
+  font-family: var(--font-mono);
+  animation: fadeUp 0.15s ease;
+}
+.item-chip-left { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.item-chip-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-chip-type {
+  font-size: 10px; color: var(--text-muted);
+  background: var(--surface-2); border-radius: 4px;
+  padding: 1px 5px; flex-shrink: 0;
+}
+.item-chip-remove {
+  background: none; border: none; color: var(--text-muted);
+  cursor: pointer; padding: 2px 4px; border-radius: 4px;
+  font-size: 14px; line-height: 1; flex-shrink: 0;
+  transition: color 0.12s;
+}
+.item-chip-remove:hover { color: var(--red); }
+
+/* ── ACTION ROW ── */
+.action-row {
+  margin-top: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+}
+.btn-weave {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--wasabi-green); color: #032D42;
+  font-family: var(--font-sans); font-size: 14px; font-weight: 700;
+  padding: 11px 28px; border: none; border-radius: 8px;
+  cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: -0.01em;
+}
+.btn-weave:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-weave:active { transform: translateY(0); }
+.btn-weave:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-spinner {
+  width: 14px; height: 14px; border: 2px solid rgba(3,45,66,0.3);
+  border-top-color: #032D42; border-radius: 50%;
+  animation: spin 0.7s linear infinite; display: none;
+}
+.shortcut-hint { font-size: 11px; color: var(--text-muted); }
+kbd {
+  background: var(--surface-3); border: 1px solid var(--border-subtle);
+  border-radius: 4px; padding: 1px 5px; font-family: var(--font-mono);
+  font-size: 10px; color: var(--text-muted);
+}
+
+/* ── STATUS BAR ── */
+.status-bar {
+  margin-top: 14px; display: none; align-items: center; gap: 10px;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 10px 14px; font-size: 13px;
+}
+.status-bar.show { display: flex; }
+.status-bar.ok  { border-color: var(--border-green); color: var(--wasabi-green); }
+.status-bar.err { border-color: rgba(255,90,90,0.3); color: var(--red); }
+.status-spinner {
+  width: 14px; height: 14px; border: 2px solid rgba(82,184,255,0.2);
+  border-top-color: var(--bright-blue); border-radius: 50%;
+  animation: spin 0.7s linear infinite; display: none; flex-shrink: 0;
+}
+
+/* ── TOOLS PREVIEW ── */
+.tools-preview {
+  margin-top: 28px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 20px;
+  display: none;
+}
+.tools-label {
+  font-size: 11px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px;
+}
+.tools-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.tool-chip {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 7px; padding: 6px 12px;
+}
+.tool-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.tool-dot.mcp      { background: var(--wasabi-green); }
+.tool-dot.open_api { background: var(--bright-blue); }
+.tool-dot.generated { background: #F5A623; }
+.tool-dot.custom   { background: var(--silver); }
+.tool-name { font-family: var(--font-mono); font-size: 11px; }
+.tool-type { font-size: 10px; color: var(--text-muted); background: var(--surface-3); border-radius: 3px; padding: 1px 4px; }
+
+@keyframes spin    { to { transform: rotate(360deg); } }
+
+@keyframes fadeUp  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── PERSONA SWITCHER ── */
+nav { overflow: visible !important; }
+.persona-wrapper { display: flex; align-items: center; gap: 8px; }
+.persona-static-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; user-select: none; }
+.persona-dropdown {
+  position: relative; display: flex; align-items: center; gap: 7px;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 6px 12px;
+  font-size: 12px; font-weight: 600; color: var(--text-primary);
+  cursor: pointer; user-select: none; transition: border-color 0.15s;
+}
+.persona-dropdown:hover { border-color: var(--border-mid); }
+.persona-dropdown.open  { border-color: var(--border-green); }
+.persona-chevron { color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
+.persona-dropdown.open .persona-chevron { transform: rotate(180deg); }
+.persona-menu {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--surface-2); border: 1px solid var(--border-mid);
+  border-radius: 10px; padding: 6px; min-width: 180px; z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.persona-dropdown.open .persona-menu { display: block; }
+.persona-menu-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; transition: background 0.12s; white-space: nowrap;
+}
+.persona-menu-item:hover { background: var(--surface-3); color: var(--text-primary); }
+.persona-menu-item.current { color: var(--wasabi-green); pointer-events: none; }
+.persona-menu-divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+.persona-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.persona-dot.admin     { background: var(--bright-blue); }
+.persona-dot.fulfiller { background: var(--wasabi-green); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="screen1-build.html">
+    <svg width="40" height="24" viewBox="0 0 140 100">
+      <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#63DF4E" stroke-width="8" stroke-linecap="round"/>
+      <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#A8C8DC" stroke-width="8" stroke-linecap="round"/>
+    </svg>
+    Jacquard Loom
+  </a>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="window.location.href='screen1-build.html'">Build</button>
+    <button class="nav-link" onclick="window.location.href='screen4-library.html'">Library</button>
+    <button class="nav-link" onclick="window.location.href='screen5-tools.html'">Tools</button>
+  </div>
+  <div class="persona-wrapper">
+    <span class="persona-static-label">Persona:</span>
+    <div class="persona-dropdown" id="persona-dropdown" onclick="togglePersonaMenu(event)">
+      <span>AI Admin</span>
+      <svg class="persona-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4 6,8 10,4"/></svg>
+      <div class="persona-menu" onclick="event.stopPropagation()">
+        <div class="persona-menu-item current"><span class="persona-dot admin"></span>AI Admin</div>
+        <div class="persona-menu-divider"></div>
+        <div class="persona-menu-item" onclick="window.location.href='screen7-fulfiller.html'"><span class="persona-dot fulfiller"></span>Fulfiller</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">
+      <svg width="96" height="58" viewBox="0 0 140 100">
+        <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#63DF4E" stroke-width="6" stroke-linecap="round"/>
+        <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#A8C8DC" stroke-width="6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <div class="header-tagline">
+        Describe your workflow. <span class="green">Jacquard Loom weaves it.</span> Thread by thread.
+      </div>
+      <div class="header-sub">Natural language in. Production-ready workflows out.</div>
+    </div>
+  </div>
+
+  <!-- Build box -->
+  <div class="build-box">
+
+    <div class="build-label">Describe what you want to build, in plain English</div>
+
+    <textarea id="prompt" placeholder="Describe any business workflow in plain English — for example, how to triage incidents, onboard a new hire, or process a service request. Jacquard Loom will extract the steps, find the right tools, and build it for you."></textarea>
+
+    <!-- Frequently automated ideas -->
+    <div class="pills-section">
+      <div class="pills-label">Most frequently automated workflows</div>
+      <div class="pills-row">
+        <div class="pill" onclick="fillPrompt('itsm')">
+          <div class="pill-icon itsm">🚨</div>
+          <div>
+            <div class="pill-text">Incident Triage and Resolution</div>
+            <div class="pill-bu">ITSM</div>
+          </div>
+        </div>
+        <div class="pill" onclick="fillPrompt('vendor')">
+          <div class="pill-icon vendor">🏭</div>
+          <div>
+            <div class="pill-text">Vendor Onboarding</div>
+            <div class="pill-bu">Procurement</div>
+          </div>
+        </div>
+        <div class="pill" onclick="fillPrompt('csm')">
+          <div class="pill-icon csm">🎧</div>
+          <div>
+            <div class="pill-text">Customer Escalation Response</div>
+            <div class="pill-bu">Customer Service Management</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADD ADDITIONAL CONTEXT ── -->
+    <div class="context-section">
+      <div class="context-header">
+        <div class="context-title">Add Additional Context</div>
+        <div class="context-desc">Help Jacquard Loom understand your process better by attaching reference materials.</div>
+      </div>
+
+      <div class="context-cards">
+
+        <!-- Card 1: Upload Files -->
+        <div class="context-card">
+          <div class="card-header">
+            <div class="card-icon files">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V6L9 2z"/>
+                <polyline points="9 2 9 6 13 6"/>
+                <line x1="8" y1="9" x2="8" y2="13"/>
+                <line x1="6" y1="11" x2="10" y2="11"/>
+              </svg>
+            </div>
+            <div>
+              <div class="card-label">Upload Files</div>
+              <div class="card-hint">SOPs, runbooks, process docs</div>
+            </div>
+          </div>
+          <div class="file-drop-zone" id="drop-zone"
+               ondragover="handleDragOver(event)"
+               ondragleave="handleDragLeave(event)"
+               ondrop="handleDrop(event)">
+            <input type="file" id="file-input" accept=".pdf,.txt,.md,.docx,.csv" multiple onchange="handleFiles(this)">
+            <div class="file-drop-text"><span>Click to upload</span> or drag &amp; drop</div>
+            <div class="file-formats">PDF · TXT · MD · DOCX · CSV</div>
+          </div>
+        </div>
+
+        <!-- Card 2: Add a URL -->
+        <div class="context-card">
+          <div class="card-header">
+            <div class="card-icon url">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 9a3 3 0 004.243.243l2-2A3 3 0 009.757 2.757l-1 1"/>
+                <path d="M9 7a3 3 0 00-4.243-.243l-2 2A3 3 0 006.243 13.243l1-1"/>
+              </svg>
+            </div>
+            <div>
+              <div class="card-label">Add a URL</div>
+              <div class="card-hint">Knowledge articles, web pages</div>
+            </div>
+          </div>
+          <div class="url-row">
+            <input class="url-input" id="url-input" type="url"
+              placeholder="https://kb.example.com/article/..." />
+            <button class="btn-add-url" onclick="addUrl()">Add</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Added items list (files + URLs together) -->
+      <div class="added-items" id="added-items"></div>
+    </div>
+
+    <!-- Action row -->
+    <div class="action-row">
+      <button class="btn-weave" id="weave-btn" onclick="buildWorkflow()">
+        <svg width="16" height="10" viewBox="0 0 140 100">
+          <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#032D42" stroke-width="10" stroke-linecap="round"/>
+          <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#032D42" stroke-width="10" stroke-linecap="round"/>
+        </svg>
+        <span id="weave-btn-text">Weave</span>
+        <div class="btn-spinner" id="weave-spinner"></div>
+      </button>
+      <div class="shortcut-hint"><kbd>⌘</kbd> + <kbd>↵</kbd> to weave</div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar" id="status-bar">
+      <div class="status-spinner" id="status-spinner"></div>
+      <span id="status-text"></span>
+    </div>
+
+  </div><!-- /build-box -->
+
+  <!-- Tools preview -->
+  <div class="tools-preview" id="tools-preview">
+    <div class="tools-label">Available tools</div>
+    <div class="tools-row" id="tools-row"></div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+var BASE = 'http://localhost:3000';
+var addedItems = []; // { type: 'file'|'url', name, data }
+var existingWorkflowId = null;
+var chipFromPill = false;
+
+var PROMPTS = {
+  itsm: 'For a specific P1 or P2 incident, fetch the full incident details. Search for resolutions to similar incidents from the past. Generate a detailed resolution plan and present it to the fulfiller for review. Once approved, post the resolution plan as a comment on the incident in GitHub.\n\nDO NOT post the resolution plan to the incident unless explicitly approved by the assignee. DO NOT post anything unless explicitly approved by the authorized person (Human in the loop).',
+  vendor: 'For a new vendor or supplier, validate their business details and compliance status, set up their account in the procurement system, provision portal access, and send them the onboarding documentation and contract for review.',
+  csm:  'When a customer submits a high-priority escalation, automatically identify the account health score, pull recent case history, route to the right support tier, notify the account executive, and draft an initial response for agent review.'
+};
+
+function fillPrompt(key) {
+  var ta = document.getElementById('prompt');
+  ta.value = PROMPTS[key] || '';
+  chipFromPill = true;
+  ta.focus();
+}
+
+document.getElementById('prompt').addEventListener('focus', function() {
+  if (chipFromPill) {
+    // Clear on next click after pill-fill
+    this.addEventListener('click', function clearOnClick() {
+      this.value = '';
+      chipFromPill = false;
+      this.removeEventListener('click', clearOnClick);
+    }, { once: true });
+  }
+});
+
+// ── FILE HANDLING ──
+function handleFiles(input) {
+  Array.from(input.files).forEach(function(f) {
+    addItem('file', f.name, f);
+  });
+  input.value = '';
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('dragover');
+}
+function handleDragLeave(e) {
+  document.getElementById('drop-zone').classList.remove('dragover');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('dragover');
+  var files = e.dataTransfer.files;
+  Array.from(files).forEach(function(f) { addItem('file', f.name, f); });
+}
+
+// ── URL HANDLING ──
+function addUrl() {
+  var input = document.getElementById('url-input');
+  var url = input.value.trim();
+  if (!url) return;
+  if (!url.startsWith('http')) url = 'https://' + url;
+  addItem('url', url, url);
+  input.value = '';
+}
+document.getElementById('url-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') addUrl();
+});
+
+// ── SHARED ADD ITEM ──
+function addItem(type, name, data) {
+  var id = Date.now() + Math.random();
+  addedItems.push({ id: id, type: type, name: name, data: data });
+  renderItems();
+}
+function removeItem(id) {
+  addedItems = addedItems.filter(function(i) { return i.id !== id; });
+  renderItems();
+}
+function renderItems() {
+  var container = document.getElementById('added-items');
+  if (!addedItems.length) { container.innerHTML = ''; return; }
+  container.innerHTML = addedItems.map(function(item) {
+    var icon = item.type === 'file'
+      ? '<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V6L9 2z"/><polyline points="9 2 9 6 13 6"/></svg>'
+      : '<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 9a3 3 0 004.243.243l2-2A3 3 0 009.757 2.757l-1 1"/><path d="M9 7a3 3 0 00-4.243-.243l-2 2A3 3 0 006.243 13.243l1-1"/></svg>';
+    var typeLabel = item.type === 'file' ? 'FILE' : 'URL';
+    var typeColor = item.type === 'file' ? 'color: var(--bright-blue)' : 'color: var(--wasabi-green)';
+    var shortName = item.name.length > 55 ? item.name.substring(0, 52) + '...' : item.name;
+    return '<div class="item-chip">' +
+      '<div class="item-chip-left">' +
+        '<span style="' + typeColor + '">' + icon + '</span>' +
+        '<span class="item-chip-name">' + esc(shortName) + '</span>' +
+        '<span class="item-chip-type" style="' + typeColor + '">' + typeLabel + '</span>' +
+      '</div>' +
+      '<button class="item-chip-remove" onclick="removeItem(' + item.id + ')" title="Remove">&times;</button>' +
+    '</div>';
+  }).join('');
+}
+
+// ── BUILD ──
+async function buildWorkflow() {
+  var prompt = document.getElementById('prompt').value.trim();
+  if (!prompt) {
+    document.getElementById('prompt').focus();
+    showStatus('err', 'Please describe your workflow first.');
+    return;
+  }
+
+  var btn = document.getElementById('weave-btn');
+  var btnText = document.getElementById('weave-btn-text');
+  var btnSpinner = document.getElementById('weave-spinner');
+  btn.disabled = true;
+  btnText.textContent = 'Weaving…';
+  btnSpinner.style.display = 'inline-block';
+  showStatus('load', 'Analysing your workflow and extracting steps…');
+
+  try {
+    var formData = new FormData();
+    formData.append('prompt', prompt);
+    // Attach first file if present (backend accepts one file)
+    var fileItem = addedItems.find(function(i){ return i.type === 'file'; });
+    if (fileItem) formData.append('file', fileItem.data);
+
+    var res = await fetch(BASE + '/api/build', { method: 'POST', body: formData });
+
+    if (res.status === 409) {
+      var d = await res.json();
+      existingWorkflowId = d.existing_workflow_id;
+      showStatus('ok', 'Workflow already exists. ' + (d.name || '') + ' — click to open.');
+      return;
+    }
+
+    if (!res.ok) throw new Error('Server error ' + res.status);
+
+    var data = await res.json();
+
+    if (data.duplicate_warning) {
+      showStatus('err', '⚠ A workflow with this name already exists. Please use a different name or reset first (Shift+Ctrl+R).');
+      return;
+    }
+
+    localStorage.setItem('weave_workflow_id', data.workflow_id || data.id);
+    localStorage.setItem('weave_steps', JSON.stringify(data.steps || []));
+    showStatus('ok', 'Workflow created — redirecting…');
+    setTimeout(function() { window.location.href = 'screen2-validate.html'; }, 900);
+
+  } catch(e) {
+    showStatus('err', 'Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Weave';
+    btnSpinner.style.display = 'none';
+  }
+}
+
+function showStatus(type, msg) {
+  var bar = document.getElementById('status-bar');
+  var text = document.getElementById('status-text');
+  var spinner = document.getElementById('status-spinner');
+  bar.className = 'status-bar show' + (type === 'ok' ? ' ok' : type === 'err' ? ' err' : '');
+  text.textContent = msg;
+  spinner.style.display = type === 'load' ? 'inline-block' : 'none';
+}
+
+async function loadToolsPreview() {
+  try {
+    var res = await fetch(BASE + '/api/tools');
+    var data = await res.json();
+    var tools = data.tools || [];
+    if (!tools.length) return;
+    var row = document.getElementById('tools-row');
+    row.innerHTML = '';
+    var typeLabels = { mcp: 'MCP', open_api: 'Open API', generated: 'Generated', custom: 'Custom' };
+    tools.forEach(function(t) {
+      var chip = document.createElement('div');
+      chip.className = 'tool-chip';
+      chip.innerHTML = '<span class="tool-dot ' + (t.type || 'custom') + '"></span>' +
+        '<span class="tool-name">' + esc(t.name) + '</span>' +
+        '<span class="tool-type">' + (typeLabels[t.type] || t.type) + '</span>';
+      row.appendChild(chip);
+    });
+    document.getElementById('tools-preview').style.display = 'block';
+  } catch(e) {}
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Hidden reset: Shift+Ctrl+R
+document.addEventListener('keydown', async function(e) {
+  if (e.shiftKey && e.ctrlKey && e.key === 'R') {
+    e.preventDefault();
+    await fetch(BASE + '/api/workflows/all', { method: 'DELETE' });
+    localStorage.clear();
+    showStatus('ok', 'Demo reset complete');
+  }
+});
+
+// Cmd+Enter to submit
+document.getElementById('prompt').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && e.metaKey) buildWorkflow();
+});
+
+loadToolsPreview();
+
+// ── PERSONA SWITCHER ──
+function togglePersonaMenu(e) {
+  e.stopPropagation();
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.toggle('open');
+}
+document.addEventListener('click', function() {
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.remove('open');
+});
+</script>
+</body>
+</html>

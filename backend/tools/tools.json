@@ -1,0 +1,51 @@
+{
+  "tools": [
+    {
+      "id": "github_mcp_fetch_incidents",
+      "name": "github.fetch_incidents",
+      "system": "github",
+      "type": "mcp",
+      "category": "query",
+      "description": "Fetches open incident issues from a GitHub repository using the GitHub MCP server. Filters by labels (P1, P2) and returns structured incident data including title, body, labels, assignee, and timestamps.",
+      "inputs": [
+        "owner",
+        "repo",
+        "labels",
+        "state"
+      ],
+      "outputs": [
+        "incidents",
+        "total_count",
+        "fetched_at"
+      ],
+      "endpoint": "mcp://github/list_issues",
+      "enabled": true,
+      "usage": 32,
+      "generated": false
+    },
+    {
+      "id": "stackoverflow_search_fixes",
+      "name": "stackoverflow.search_fixes",
+      "system": "stackoverflow",
+      "type": "open_api",
+      "category": "query",
+      "description": "Searches Stack Overflow for known fixes and answers related to a given error signature. Uses the Stack Exchange public API \u2014 no authentication required. Returns top answers with scores and links.",
+      "inputs": [
+        "error_signature",
+        "tags",
+        "limit"
+      ],
+      "outputs": [
+        "answers",
+        "total_found",
+        "top_answer",
+        "top_url",
+        "top_score"
+      ],
+      "endpoint": "https://api.stackexchange.com/2.3/search/advanced",
+      "enabled": true,
+      "usage": 32,
+      "generated": false
+    }
+  ]
+}

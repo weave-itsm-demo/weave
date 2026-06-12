@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jacquard Loom — Fulfiller</title>
+<style>
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'ServiceNow Sans Mono'; src: url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSansMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+
+:root {
+  --infinite-blue: #032D42;
+  --wasabi-green: #63DF4E;
+  --silver: #A8C8DC;
+  --bright-blue: #52B8FF;
+  --font-sans: 'ServiceNow Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'ServiceNow Sans Mono', 'Consolas', monospace;
+  --surface-1: #042538;
+  --surface-2: #063347;
+  --surface-3: #0a3d55;
+  --border-subtle: rgba(82,184,255,0.12);
+  --border-mid: rgba(82,184,255,0.22);
+  --border-green: rgba(99,223,78,0.3);
+  --green-bg: rgba(99,223,78,0.08);
+  --text-primary: #FFFFFF;
+  --text-secondary: #A8C8DC;
+  --text-muted: #5A8A9F;
+  --red: #FF5A5A;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; background: var(--infinite-blue); color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; }
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 52px;
+  background: rgba(3,45,66,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow: visible;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 600; color: var(--text-primary);
+  cursor: pointer; user-select: none; letter-spacing: -0.01em; text-decoration: none;
+}
+
+/* ── PERSONA SWITCHER ── */
+.persona-wrapper { display: flex; align-items: center; gap: 8px; }
+.persona-static-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; user-select: none; }
+.persona-dropdown {
+  position: relative; display: flex; align-items: center; gap: 7px;
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 6px 12px;
+  font-size: 12px; font-weight: 600; color: var(--text-primary);
+  cursor: pointer; user-select: none; transition: border-color 0.15s;
+}
+.persona-dropdown:hover { border-color: var(--border-mid); }
+.persona-dropdown.open  { border-color: var(--border-green); }
+.persona-chevron { color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
+.persona-dropdown.open .persona-chevron { transform: rotate(180deg); }
+.persona-menu {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--surface-2); border: 1px solid var(--border-mid);
+  border-radius: 10px; padding: 6px; min-width: 180px; z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.persona-dropdown.open .persona-menu { display: block; }
+.persona-menu-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; transition: background 0.12s; white-space: nowrap;
+}
+.persona-menu-item:hover { background: var(--surface-3); color: var(--text-primary); }
+.persona-menu-item.current { color: var(--wasabi-green); pointer-events: none; }
+.persona-menu-divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+.persona-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.persona-dot.admin     { background: var(--bright-blue); }
+.persona-dot.fulfiller { background: var(--wasabi-green); }
+
+/* ── PAGE ── */
+.page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+
+/* ── PAGE HEADER ── */
+.page-header { margin-bottom: 32px; }
+.page-eyebrow {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--wasabi-green); margin-bottom: 6px;
+}
+.page-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.page-sub { font-size: 13px; color: var(--text-muted); margin-top: 6px; max-width: 520px; }
+
+/* ── SEARCH ── */
+.search-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  border-radius: 10px; padding: 10px 16px; margin-bottom: 28px;
+  transition: border-color 0.15s;
+}
+.search-bar:focus-within { border-color: var(--border-green); }
+.search-bar input {
+  flex: 1; background: none; border: none; outline: none;
+  font-family: var(--font-sans); font-size: 14px; color: var(--text-primary);
+}
+.search-bar input::placeholder { color: var(--text-muted); }
+
+/* ── BU FILTER ── */
+.bu-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 28px; }
+.bu-pill {
+  background: none; border: 1px solid var(--border-subtle);
+  color: var(--text-muted); font-family: var(--font-sans); font-size: 12px;
+  padding: 5px 14px; border-radius: 20px; cursor: pointer; transition: all 0.14s;
+}
+.bu-pill:hover { border-color: var(--border-mid); color: var(--text-secondary); }
+.bu-pill.active { background: var(--green-bg); border-color: var(--border-green); color: var(--wasabi-green); }
+
+/* ── WORKFLOW GRID ── */
+.wf-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px;
+}
+
+.wf-card {
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  border-radius: 14px; overflow: hidden;
+  transition: border-color 0.15s, transform 0.12s;
+  animation: fadeUp 0.18s ease both;
+  display: flex; flex-direction: column;
+}
+.wf-card:hover { border-color: var(--border-mid); transform: translateY(-2px); }
+
+.card-top-bar { height: 3px; background: var(--wasabi-green); }
+
+.card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+
+.card-head { display: flex; align-items: flex-start; gap: 12px; }
+.card-icon {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.card-icon.itsm { background: rgba(255,90,90,0.1); }
+.card-icon.hr   { background: rgba(82,184,255,0.1); }
+.card-icon.csm  { background: rgba(99,223,78,0.1); }
+.card-icon.fin  { background: rgba(245,166,35,0.1); }
+.card-icon.it   { background: rgba(168,200,220,0.1); }
+
+.card-title-wrap { flex: 1; }
+.card-title { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; line-height: 1.3; }
+.card-bu { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-family: var(--font-mono); }
+
+.card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; flex: 1; }
+
+.card-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag {
+  font-size: 10px; font-family: var(--font-mono); color: var(--text-muted);
+  background: var(--surface-3); border-radius: 4px; padding: 2px 7px;
+}
+
+.card-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: 4px;
+}
+.card-meta { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); display: flex; gap: 12px; }
+.btn-run {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--wasabi-green); color: #032D42;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 700;
+  padding: 8px 20px; border: none; border-radius: 8px;
+  cursor: pointer; transition: opacity 0.15s, transform 0.1s; letter-spacing: -0.01em;
+}
+.btn-run:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-run:active { transform: translateY(0); }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  display: none; flex-direction: column; align-items: center;
+  padding: 80px 24px; text-align: center; grid-column: 1/-1;
+}
+.empty-state.show { display: flex; }
+.empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.4; }
+.empty-title { font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+.empty-sub { font-size: 13px; color: var(--text-muted); }
+
+/* ── RUN MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(3,45,66,0.7); backdrop-filter: blur(6px);
+  z-index: 300; display: none; align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--surface-1); border: 1px solid var(--border-mid);
+  border-radius: 14px; width: 480px; max-width: calc(100vw - 40px);
+  overflow: hidden; animation: fadeUp 0.2s ease;
+}
+.modal-header {
+  padding: 20px 24px 16px; border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.modal-icon { font-size: 24px; margin-bottom: 6px; }
+.modal-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.modal-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.modal-close {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 5px;
+  transition: color 0.12s; flex-shrink: 0;
+}
+.modal-close:hover { color: var(--text-primary); }
+.modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+.modal-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+.input-group { display: flex; flex-direction: column; gap: 6px; }
+.input-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+.input-field {
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 9px 12px; font-family: var(--font-sans);
+  font-size: 13px; color: var(--text-primary); outline: none; transition: border-color 0.15s;
+}
+.input-field:focus { border-color: var(--border-green); }
+.input-field::placeholder { color: var(--text-muted); }
+
+.modal-footer {
+  padding: 16px 24px; border-top: 1px solid var(--border-subtle);
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+.btn-cancel {
+  background: none; border: 1px solid var(--border-subtle); color: var(--text-muted);
+  font-family: var(--font-sans); font-size: 13px; padding: 9px 18px;
+  border-radius: 8px; cursor: pointer; transition: border-color 0.15s, color 0.15s;
+}
+.btn-cancel:hover { border-color: var(--border-mid); color: var(--text-secondary); }
+.btn-confirm {
+  background: var(--wasabi-green); color: #032D42;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 700;
+  padding: 9px 24px; border: none; border-radius: 8px; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-confirm:hover { opacity: 0.9; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="screen1-build.html">
+    <svg width="40" height="24" viewBox="0 0 140 100">
+      <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#63DF4E" stroke-width="8" stroke-linecap="round"/>
+      <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#A8C8DC" stroke-width="8" stroke-linecap="round"/>
+    </svg>
+    Jacquard Loom
+  </a>
+
+  <div class="persona-wrapper">
+    <span class="persona-static-label">Persona:</span>
+    <div class="persona-dropdown" id="persona-dropdown" onclick="togglePersonaMenu(event)">
+      <span>Fulfiller</span>
+      <svg class="persona-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4 6,8 10,4"/></svg>
+      <div class="persona-menu" onclick="event.stopPropagation()">
+        <div class="persona-menu-item current"><span class="persona-dot fulfiller"></span>Fulfiller</div>
+        <div class="persona-menu-divider"></div>
+        <div class="persona-menu-item" onclick="window.location.href='screen1-build.html'"><span class="persona-dot admin"></span>AI Admin</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="page-header">
+    <div class="page-eyebrow">Fulfiller Portal</div>
+    <div class="page-title">Published workflows</div>
+    <div class="page-sub">Browse and run automated workflows published by your team. Select a workflow to review its steps and kick it off.</div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" stroke-width="1.8" stroke-linecap="round">
+      <circle cx="7" cy="7" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/>
+    </svg>
+    <input type="text" id="search" placeholder="Search workflows by name, description, or tag…" oninput="applyFilters()">
+  </div>
+
+  <!-- BU filter -->
+  <div class="bu-filter" id="bu-filter"></div>
+
+  <!-- Grid -->
+  <div class="wf-grid" id="wf-grid">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">🧵</div>
+      <div class="empty-title">No workflows found</div>
+      <div class="empty-sub">Try a different search or filter.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Run confirmation modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="modal-icon" id="modal-icon">🚨</div>
+        <div class="modal-title" id="modal-title">Run workflow</div>
+        <div class="modal-sub" id="modal-sub">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-desc" id="modal-desc">—</div>
+      <div class="input-group" id="modal-input-group">
+        <div class="input-label">Incident / Request number <span style="color:var(--text-muted);text-transform:none;font-weight:400">(optional)</span></div>
+        <input class="input-field" id="modal-input" type="text" placeholder="e.g. INC0042819 or REQ0001234" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" onclick="confirmRun()">
+        Run now
+        <svg width="12" height="8" viewBox="0 0 140 100" style="margin-left:4px">
+          <path d="M0 50 C23 0, 47 0, 70 50 C93 100, 117 100, 140 50" fill="none" stroke="#032D42" stroke-width="12" stroke-linecap="round"/>
+          <path d="M0 50 C23 100, 47 100, 70 50 C93 0, 117 0, 140 50" fill="none" stroke="#032D42" stroke-width="12" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+var workflows = [];
+var filteredWorkflows = [];
+var activeBU = 'all';
+var activeWorkflow = null;
+
+function seedWorkflows() {
+  return [
+    {
+      id: 'WF-A1B2C', title: 'Incident Triage & Briefing', icon: '🚨', iconClass: 'itsm',
+      bu: 'ITSM', runs: 12, steps: 5,
+      desc: 'Automatically triages P1/P2 incidents — checks the affected CI, scores recent history, generates an on-call briefing, and notifies stakeholders via Slack and email.',
+      tags: ['P1/P2', 'on-call', 'Slack', 'CMDB'],
+      inputLabel: 'Incident / Issue ID', inputPlaceholder: 'e.g. INC0042819 or #42',
+      stepDefs: [
+        { id:'step_1', title:'Fetch incident details from GitHub',          type:'query',  tool:'github.fetch_incidents'              },
+        { id:'step_2', title:'Search Stack Overflow for known resolutions', type:'query',  tool:'stackoverflow.search_fixes'          },
+        { id:'step_3', title:'Generate incident resolution plan',           type:'action', tool:'weave.generate_resolution_plan'      }
+      ]
+    },
+    {
+      id: 'WF-D3E4F', title: 'Employee Onboarding', icon: '🧑‍💼', iconClass: 'hr',
+      bu: 'HR Service Delivery', runs: 3, steps: 5,
+      desc: 'Provisions accounts, assigns training modules, schedules introductory meetings, and sends a welcome email when a new hire is added to the HR system.',
+      tags: ['HR', 'provisioning', 'training', 'onboarding'],
+      inputLabel: 'Employee ID', inputPlaceholder: 'e.g. EMP00421',
+      stepDefs: [
+        { id:'s1', title:'Validate new hire record in HR system',          type:'query'  },
+        { id:'s2', title:'Provision AD account and email',                 type:'action' },
+        { id:'s3', title:'Assign mandatory training modules',              type:'write'  },
+        { id:'s4', title:'Schedule introductory meetings',                 type:'logic'  },
+        { id:'s5', title:'Send welcome email with first-day instructions', type:'notify' }
+      ]
+    },
+    {
+      id: 'WF-J7K8L', title: 'Purchase Order Approval', icon: '💰', iconClass: 'fin',
+      bu: 'Finance & Procurement', runs: 28, steps: 4,
+      desc: 'Routes purchase orders through the correct approval chain based on amount, department, and vendor status. Notifies approvers and updates the PO record on decision.',
+      tags: ['PO', 'approval', 'procurement', 'Finance'],
+      inputLabel: 'PO number', inputPlaceholder: 'e.g. PO-2026-00892',
+      stepDefs: [
+        { id:'s1', title:'Fetch PO record and vendor details', type:'fetch'  },
+        { id:'s2', title:'Evaluate approval routing rules',    type:'logic'  },
+        { id:'s3', title:'Notify approvers via email',         type:'notify' },
+        { id:'s4', title:'Update PO state on approval',        type:'write'  }
+      ]
+    },
+    {
+      id: 'WF-P1Q2R', title: 'Change Request Risk Assessment', icon: '🔄', iconClass: 'itsm',
+      bu: 'ITSM', runs: 41, steps: 4,
+      desc: 'Assesses change request risk by evaluating CI impact, historical failure rates, and current incident load. Notifies the CAB and updates the change record.',
+      tags: ['change management', 'risk', 'CAB', 'ITSM'],
+      inputLabel: 'Change request number', inputPlaceholder: 'e.g. CHG0009341',
+      stepDefs: [
+        { id:'s1', title:'Fetch change request and affected CIs', type:'fetch'   },
+        { id:'s2', title:'Evaluate historical failure rate',      type:'process' },
+        { id:'s3', title:'Score overall change risk',             type:'logic'   },
+        { id:'s4', title:'Notify CAB and update change record',   type:'notify'  }
+      ]
+    },
+    {
+      id: 'WF-G5H6I', title: 'Customer Escalation Response', icon: '🎧', iconClass: 'csm',
+      bu: 'Customer Service', runs: 7, steps: 5,
+      desc: 'Identifies account health, pulls case history, routes to the right support tier, notifies the AE, and drafts an initial response for agent review.',
+      tags: ['CSM', 'escalation', 'SLA', 'AE'],
+      inputLabel: 'Case number', inputPlaceholder: 'e.g. CS-204891',
+      stepDefs: [
+        { id:'s1', title:'Fetch customer account and health score', type:'fetch'   },
+        { id:'s2', title:'Pull recent case history',                type:'query'   },
+        { id:'s3', title:'Evaluate routing and SLA criteria',       type:'logic'   },
+        { id:'s4', title:'Notify account executive',                type:'notify'  },
+        { id:'s5', title:'Draft initial response for agent review', type:'generate'}
+      ]
+    }
+  ];
+}
+
+function init() {
+  workflows = seedWorkflows();
+
+  // Inject recently published workflow from localStorage
+  try {
+    var wfId = localStorage.getItem('weave_workflow_id');
+    var wfSteps = JSON.parse(localStorage.getItem('weave_steps') || '[]');
+    var published = localStorage.getItem('weave_published_' + wfId);
+    if (published && wfId && !workflows.find(function(w){ return w.id === wfId; })) {
+      workflows.unshift({
+        id: wfId, title: 'New workflow', icon: '🧵', iconClass: 'it',
+        bu: 'Custom', runs: 0, steps: wfSteps.length || 5,
+        desc: 'Recently published workflow.',
+        tags: ['custom'],
+        inputLabel: 'Reference number',
+        inputPlaceholder: 'e.g. REF-001'
+      });
+    }
+  } catch(e) {}
+
+  buildBUFilter();
+  applyFilters();
+  fetchPublishedWorkflows();
+}
+
+async function fetchPublishedWorkflows() {
+  try {
+    var res = await fetch('http://localhost:3000/api/workflows/published');
+    if (!res.ok) return;
+    var data = await res.json();
+    var published = data.workflows || [];
+    var added = false;
+    published.forEach(function(w) {
+      var id = w.workflow_id || w.id;
+      if (workflows.find(function(x){ return x.id === id; })) return;
+      workflows.unshift({
+        id:    id,
+        title: w.workflow_name || w.title || 'Untitled Workflow',
+        icon:  '🧵', iconClass: 'it', bu: 'Custom',
+        runs: 0, steps: (w.steps || []).length,
+        desc: w.prompt || 'Published workflow.',
+        tags: ['custom'],
+        inputLabel: 'Issue / Record ID',
+        inputPlaceholder: 'e.g. 1',
+        stepDefs: (w.steps || []).map(function(s) {
+          return { id: s.id, title: s.title, type: s.type, tool: s.tool };
+        })
+      });
+      added = true;
+    });
+    if (added) { buildBUFilter(); applyFilters(); }
+  } catch(e) {}
+}
+
+function buildBUFilter() {
+  var bus = ['all'].concat([...new Set(workflows.map(function(w){ return w.bu; }))]);
+  var filter = document.getElementById('bu-filter');
+  filter.innerHTML = bus.map(function(bu) {
+    return '<button class="bu-pill' + (bu === 'all' ? ' active' : '') + '" onclick="setBU(\'' + esc(bu) + '\', this)">' +
+      (bu === 'all' ? 'All' : esc(bu)) + '</button>';
+  }).join('');
+}
+
+function setBU(bu, btn) {
+  activeBU = bu;
+  document.querySelectorAll('.bu-pill').forEach(function(p){ p.classList.remove('active'); });
+  btn.classList.add('active');
+  applyFilters();
+}
+
+function applyFilters() {
+  var q = document.getElementById('search').value.toLowerCase();
+  filteredWorkflows = workflows.filter(function(w) {
+    var matchBU = activeBU === 'all' || w.bu === activeBU;
+    var matchQ  = !q || w.title.toLowerCase().includes(q) ||
+                  w.desc.toLowerCase().includes(q) ||
+                  (w.tags || []).some(function(t){ return t.toLowerCase().includes(q); });
+    return matchBU && matchQ;
+  });
+  renderGrid();
+}
+
+function renderGrid() {
+  var grid = document.getElementById('wf-grid');
+  var empty = document.getElementById('empty-state');
+
+  if (!filteredWorkflows.length) {
+    Array.from(grid.querySelectorAll('.wf-card')).forEach(function(c){ c.remove(); });
+    if (empty) empty.classList.add('show');
+    return;
+  }
+  if (empty) empty.classList.remove('show');
+
+  grid.innerHTML = filteredWorkflows.map(function(w) {
+    return '<div class="wf-card">' +
+      '<div class="card-top-bar"></div>' +
+      '<div class="card-body">' +
+        '<div class="card-head">' +
+          '<div class="card-icon ' + esc(w.iconClass) + '">' + w.icon + '</div>' +
+          '<div class="card-title-wrap">' +
+            '<div class="card-title">' + esc(w.title) + '</div>' +
+            '<div class="card-bu">' + esc(w.bu) + ' · ' + esc(w.id) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="card-desc">' + esc(w.desc) + '</div>' +
+        '<div class="card-tags">' + (w.tags||[]).map(function(t){ return '<span class="tag">' + esc(t) + '</span>'; }).join('') + '</div>' +
+        '<div class="card-footer">' +
+          '<div class="card-meta">' +
+            '<span>' + w.steps + ' steps</span>' +
+            '<span>' + w.runs + ' runs</span>' +
+          '</div>' +
+          '<button class="btn-run" onclick="openRunModal(\'' + esc(w.id) + '\')">' +
+            '▶ Run' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── RUN MODAL ──
+function openRunModal(id) {
+  var w = workflows.find(function(x){ return x.id === id; });
+  if (!w) return;
+  activeWorkflow = w;
+
+  document.getElementById('modal-icon').textContent  = w.icon;
+  document.getElementById('modal-title').textContent = w.title;
+  document.getElementById('modal-sub').textContent   = w.bu + ' · ' + w.steps + ' steps';
+  document.getElementById('modal-desc').textContent  = w.desc;
+
+  var inputGroup = document.getElementById('modal-input-group');
+  var inputLabel = inputGroup.querySelector('.input-label');
+  var inputField = document.getElementById('modal-input');
+  inputLabel.textContent = w.inputLabel || 'Reference number';
+  inputField.placeholder = w.inputPlaceholder || '';
+  inputField.value = '';
+
+  document.getElementById('modal-overlay').classList.add('show');
+  setTimeout(function(){ inputField.focus(); }, 100);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+  activeWorkflow = null;
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+function confirmRun() {
+  if (!activeWorkflow) return;
+  var issueId = document.getElementById('modal-input').value.trim();
+  localStorage.setItem('weave_workflow_id', activeWorkflow.id);
+  localStorage.setItem('weave_steps', JSON.stringify(activeWorkflow.stepDefs || []));
+  if (issueId) localStorage.setItem('weave_run_context', issueId);
+  closeModal();
+  window.location.href = 'screen3-fulfiller-run.html';
+}
+
+// ── PERSONA SWITCHER ──
+function togglePersonaMenu(e) {
+  e.stopPropagation();
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.toggle('open');
+}
+document.addEventListener('click', function() {
+  var dd = document.getElementById('persona-dropdown');
+  if (dd) dd.classList.remove('open');
+});
+
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeModal(); });
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+init();
+</script>
+</body>
+</html>
